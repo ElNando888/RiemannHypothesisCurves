@@ -1,0 +1,610 @@
+\section{The Riemann Hypothesis for hyperelliptic curves}
+
+\begin{definition}[Hyperelliptic curve]\label{def:hyperelliptic-curve} \leanok \lean{hyperellipticCurve}
+  Let $\mathbb{F} = \mathbb{F}_q$ be a finite field of characteristic $p$ with $q = p^n$ elements. Let $f \in \mathbb{F}[X]$ be a polynomial of degree $m \geq 3$ such that $f$ is not a square in $\overline{\mathbb{F}}[X]$ (where $\overline{\mathbb{F}}$ denotes the algebraic closure of $\mathbb{F}$). The hyperelliptic curve $C_f$ over $\mathbb{F}$ is defined by the equation
+  \begin{align*}
+    C_f : y^2 = f(x).
+  \end{align*}
+  We denote by $C_f(\mathbb{F}) = \{(x,y) \in \mathbb{F}^2 : y^2 = f(x)\}$ the set of $\mathbb{F}$-rational points on $C_f$.
+\end{definition}
+
+\begin{definition}[The set $\mathcal{S}_a$]\label{def:set-sa} \leanok \lean{S_a}
+  For any $a \in \mathbb{F}$ and $c = \frac{q-1}{2}$, define
+  \begin{align*}
+    \mathcal{S}_a = \{x \in \mathbb{F} : f(x) = 0 \text{ or } f(x)^c = a\}.
+  \end{align*}
+\end{definition}
+
+\begin{definition}[Hasse derivative]\label{def:hasse-derivative} \leanok \lean{hasseDerivOp}
+  For each non-negative integer $k$, the $k$-th Hasse derivative operator $E^k : \mathbb{F}[X] \to \mathbb{F}[X]$ is defined on monomials by
+  \begin{align*}
+    E^k(X^n) = \binom{n}{k} X^{n-k}
+  \end{align*}
+  and extended to all polynomials by linearity.
+\end{definition}
+
+\begin{lemma}[Leibniz rule for Hasse derivatives]\label{lem:hasse-leibniz} \leanok \lean{hasseLeibniz_general}
+  \uses{def:hasse-derivative}
+  For any $f_1, \ldots, f_r \in \mathbb{F}[X]$, the Hasse derivatives satisfy
+  \begin{align*}
+    E^k(f_1 \cdots f_r) = \sum_{j_1 + \cdots + j_r = k} E^{j_1}(f_1) \cdots E^{j_r}(f_r).
+  \end{align*}
+\end{lemma}
+\begin{proof} \leanok
+  By linearity, it suffices to consider $f_i = X^{n_i}$. The result follows from the binomial identity
+  \begin{align*}
+    \binom{n_1 + \cdots + n_r}{k} = \sum_{j_1 + \cdots + j_r = k} \binom{n_1}{j_1} \cdots \binom{n_r}{j_r},
+  \end{align*}
+  which holds by counting the number of ways to choose $k$ objects from $n_1 + \cdots + n_r$ objects partitioned into $r$ groups of sizes $n_1, \ldots, n_r$.
+\end{proof}
+
+\begin{corollary}[Hasse derivative formulas]\label{cor:hasse-formulas} \leanok \lean{hasse_formulas}
+  \uses{def:hasse-derivative}
+  Given $0 \leq k \leq r$:
+  \begin{enumerate}
+    \item[(i)] For all $a \in \mathbb{F}$, we have $E^k((X-a)^r) = \binom{r}{k}(X-a)^{r-k}$.
+    \item[(ii)] For any $f, g \in \mathbb{F}[X]$, the polynomial $h = E^k(fg^r)/g^{r-k}$ has degree
+          \begin{align*}
+            \deg(h) \leq \deg(f) + k\deg(g) - k.
+          \end{align*}
+  \end{enumerate}
+\end{corollary}
+\begin{proof} \leanok
+  (i) This is the standard Hasse derivative formula for $(X-a)^r$.
+
+  (ii) The divisibility $g^{r-k} \mid E^k(f g^r)$ follows from the Hasse-derivative
+  product/power formula. For the degree bound, set $q = E^k(f g^r) / g^{r-k}$.
+  If $f = 0$ or $g = 0$, the bound is immediate. Otherwise combine
+  $\deg(E^k p) \leq \deg(p) - k$ with $\deg(f g^r) \leq \deg(f) + r\deg(g)$ and
+  $\deg(g^r) = r\deg(g)$ to obtain $\deg(q) \leq \deg(f) + k\deg(g) - k$.
+\end{proof}
+
+\begin{lemma}[Divisibility criterion]\label{lem:hasse-divisibility} \leanok \lean{hasse_divisibility}
+  \uses{def:hasse-derivative}
+  Given $f \in \mathbb{F}[X]$ and $a \in \mathbb{F}$. If $(E^k f)(a) = 0$ for all $k < \ell$, then $(X-a)^\ell$ divides $f$.
+\end{lemma}
+\begin{proof} \leanok
+  Let $t(X) = \sum_{r \ge 0} c_r (X-a)^r$ be the Taylor expansion of $f$ at $a$.
+  In Lean, $t = \mathrm{taylor}_a(f)$ and $c_r = (E^r f)(a)$.
+  The hypothesis says $c_r = 0$ for all $r < \ell$, so
+  \begin{align*}
+    t(X) = (X-a)^\ell \sum_{r \ge 0} c_{r+\ell} (X-a)^r.
+  \end{align*}
+  Since $t=f$, we obtain $(X-a)^\ell \mid f$.
+\end{proof}
+
+\begin{lemma}[Auxiliary polynomial derivatives]\label{lem:auxiliary-derivatives} \leanok \lean{auxiliary_derivatives}
+  \uses{def:hasse-derivative, cor:hasse-formulas}
+  Let $f \in \mathbb{F}[X]$ have degree $m$, let $c = \frac{q-1}{2}$, and let $r_j, s_j \in \mathbb{F}[X]$ have degree at most $d$. For $0 \leq k \leq \ell$, define
+  \begin{align*}
+    r_j^{(k)} = E^k(f^\ell r_j)/f^{\ell-k}, \quad s_j^{(k)} = E^k(f^{\ell+c} s_j)/f^{\ell+c-k}.
+  \end{align*}
+  Then $r_j^{(k)}$ and $s_j^{(k)}$ are polynomials with $\deg(r_j^{(k)}), \deg(s_j^{(k)}) \leq d + k(m-1)$.
+\end{lemma}
+\begin{proof} \leanok
+  Apply Corollary~\ref{cor:hasse-formulas}(ii) with $g = f$. For $r_j^{(k)}$, we have
+  \begin{align*}
+    \deg(r_j^{(k)}) = \deg(E^k(f^\ell r_j)/f^{\ell-k}) \leq \deg(r_j) + k\deg(f) - k \leq d + k(m-1).
+  \end{align*}
+  Similarly for $s_j^{(k)}$ using $\deg(s_j) \leq d$.
+\end{proof}
+
+\begin{lemma}[Stepanov polynomial form]\label{lem:stepanov-form} \leanok \lean{stepanov_form}
+  \uses{def:hasse-derivative, lem:auxiliary-derivatives}
+  Let $\mathbb{F} = \mathbb{F}_q$ be a finite field and
+  \[
+    r(X) = f(X)^\ell \sum_{0 \leq j < J} (r_j(X) + s_j(X) f(X)^c) X^{jq},
+    \qquad c = \frac{q-1}{2},
+  \]
+  where $r_j, s_j \in \mathbb{F}[X]$ have degree at most $d$. For $k < \ell$ with $k < q$, we have
+  \begin{align*}
+    E^k(r)(X) = f(X)^{\ell-k} \sum_{0 \leq j < J} (r_j^{(k)}(X) + s_j^{(k)}(X) f(X)^c) X^{jq}
+  \end{align*}
+  where $r_j^{(k)}, s_j^{(k)}$ are as in Lemma~\ref{lem:auxiliary-derivatives}.
+\end{lemma}
+\begin{proof} \leanok
+  Write $r(X) = h(X, X^q)$ for $h(X,Y) = f(X)^\ell \sum_{0 \leq j < J} (r_j(X) + s_j(X) f(X)^c) Y^j$. For Hasse derivatives with $k < q$, the Frobenius term $X^q$ behaves as a constant in the $X$-derivative, so
+  \begin{align*}
+    (E^k r)(X) = (E_X^k h)(X, X^q) = \sum_{0 \leq j < J} \big(E^k(f^\ell r_j) + E^k(f^{\ell+c} s_j)\big) X^{jq}.
+  \end{align*}
+  Factor out $f^{\ell-k}$ using the definitions in Lemma~\ref{lem:auxiliary-derivatives} to obtain the result.
+\end{proof}
+
+\begin{lemma}[Square from polynomial equality]\label{lem:stepanov-square-from-eq} \leanok \lean{stepanov_square_from_eq}
+  Let $r, s \in \mathbb{F}[X]$ be polynomials, $f \in \mathbb{F}[X]$, and $f_0 \in \mathbb{F}$ with $f_0 \neq 0$ and $s \neq 0$. If $r(X)^2 f(X) = s(X)^2 f_0$, then $f$ is a square in $\overline{\mathbb{F}}[X]$.
+\end{lemma}
+\begin{proof} \leanok
+  Let $K = \overline{\mathbb{F}}$ and map the identity to $K[X]$.
+  Since $s \neq 0$ and $f_0 \neq 0$, the equality forces $r \neq 0$ as well.
+  Choose $\alpha \in K$ with $\alpha^2 = f_0$ (existence follows from algebraic closure).
+  In the fraction field $K(X)$ define
+  \[
+    g = \frac{s}{r}\,\alpha.
+  \]
+  Then the mapped identity gives $g^2 = f$ in $K(X)$.
+  The element $g$ is integral over $K[X]$, and $K[X]$ is integrally closed, so in fact
+  $g \in K[X]$. Hence $f$ is a square in $K[X] = \overline{\mathbb{F}}[X]$.
+\end{proof}
+
+\begin{lemma}[Shift preserves non-square property]\label{lem:stepanov-nonzero-shift-preserves} \leanok \lean{stepanov_nonzero_shift_preserves}
+  Let $f \in \mathbb{F}[X]$ be a polynomial that is not a square in $\overline{\mathbb{F}}[X]$, and let $a \in \overline{\mathbb{F}}$. Then $f(X+a)$ is not a square in $\overline{\mathbb{F}}[X]$.
+\end{lemma}
+\begin{proof} \leanok
+  If $f(X+a) = g(X)^2$ for some $g \in \overline{\mathbb{F}}[X]$, then substituting $Y = X-a$ gives $f(Y) = g(Y-a)^2$, contradicting that $f$ is not a square in $\overline{\mathbb{F}}[X]$.
+\end{proof}
+
+\begin{lemma}[Minimal index congruence]\label{lem:stepanov-nonzero-minimal-congruence} \leanok \lean{stepanov_nonzero_minimal_congruence}
+  Let $r(X) = f(X)^\ell \sum_{0 \leq j < J} (r_j(X) + s_j(X) f(X)^c) X^{jq}$ with $r = 0$ and $f$ not identically zero. If $k$ is the smallest index with $r_k \neq 0$ or $s_k \neq 0$, then
+  \begin{align*}
+    r_k + s_k f^c \equiv 0 \pmod{X^q}.
+  \end{align*}
+\end{lemma}
+\begin{proof} \leanok
+  Since $r = 0$, we have $\sum_{0 \leq j < J} (r_j + s_j f^c) X^{jq} = 0$. For $j < k$, both $r_j = 0$ and $s_j = 0$ by minimality of $k$. Dividing by $f^\ell X^{kq}$ (nonzero since $f$ is not identically zero) gives
+  \begin{align*}
+    0 = \sum_{k \leq j < J} (r_j + s_j f^c) X^{(j-k)q} \equiv r_k + s_k f^c \pmod{X^q}
+  \end{align*}
+  since all terms with $j > k$ are divisible by $X^q$.
+\end{proof}
+
+\begin{lemma}[Frobenius power modulo $X^q$]\label{lem:stepanov-nonzero-frobenius-mod} \leanok \lean{stepanov_nonzero_frobenius_mod}
+  Let $\mathbb{F}$ be a finite field with $|\mathbb{F}| = q$ and $f \in \mathbb{F}[X]$. Then
+  \begin{align*}
+    f(X)^q \equiv f(0) \pmod{X^q}.
+  \end{align*}
+\end{lemma}
+\begin{proof} \leanok
+  By the Frobenius endomorphism (and the fact that $a^q = a$ for $a \in \mathbb{F}_q$), we have
+  $f(X)^q = f(X^q)$ in $\mathbb{F}[X]$. Write $f(X) = \sum_{i=0}^d \alpha_i X^i$. Then
+  $f(X^q) = \sum_{i=0}^d \alpha_i X^{iq}$. For $i \geq 1$, we have $X^{iq} \equiv 0 \pmod{X^q}$.
+  Therefore $f(X^q) \equiv \alpha_0 = f(0) \pmod{X^q}$.
+\end{proof}
+
+\begin{lemma}[Polynomial equality from congruence]\label{lem:stepanov-nonzero-polynomial-equality} \leanok \lean{stepanov_nonzero_polynomial_equality}
+  \uses{lem:stepanov-nonzero-frobenius-mod}
+  Let $\mathbb{F}$ be a finite field of odd characteristic with $|\mathbb{F}| = q$ and let $f \in \mathbb{F}[X]$ have degree $m$. Set $c = \frac{q-1}{2}$. Suppose $r, s \in \mathbb{F}[X]$ satisfy
+  \begin{align*}
+    2\deg(r) + m < q, \quad 2\deg(s) + m < q,
+  \end{align*}
+  and
+  \begin{align*}
+    r + s f^c \equiv 0 \pmod{X^q}.
+  \end{align*}
+  Then $r(X)^2 f(X) = s(X)^2 f(0)$.
+\end{lemma}
+\begin{proof} \leanok
+  Since $\mathbb{F}$ has odd characteristic and $|\mathbb{F}| = q$, we have $2c + 1 = q$.
+  From $r + s f^c \equiv 0 \pmod{X^q}$ we get
+  \[
+    X^q \mid (r + s f^c)(r - s f^c) = r^2 - s^2 f^{2c}.
+  \]
+  Multiplying by $f$ and using $2c + 1 = q$ yields
+  \[
+    X^q \mid r^2 f - s^2 f^q.
+  \]
+  By Lemma~\ref{lem:stepanov-nonzero-frobenius-mod}, $f^q \equiv f(0) \pmod{X^q}$, hence
+  $X^q \mid r^2 f - s^2 f(0)$.
+  The degree bounds give $\deg(r^2 f) < q$ and $\deg(s^2 f(0)) < q$, so this divisibility forces
+  $r^2 f = s^2 f(0)$.
+\end{proof}
+
+\begin{lemma}[Non-vanishing of Stepanov polynomial (base case)]\label{lem:stepanov-nonzero-eval-zero} \leanok \lean{stepanov_nonzero_eval_zero}
+  \uses{lem:stepanov-square-from-eq, lem:stepanov-nonzero-minimal-congruence, lem:stepanov-nonzero-polynomial-equality}
+  Let $\mathbb{F} = \mathbb{F}_q$ be a finite field of odd characteristic and let
+  \[
+    r(X) = f(X)^\ell \sum_{0 \leq j < J} (r_j(X) + s_j(X) f(X)^c) X^{jq},
+    \qquad c = \frac{q-1}{2}.
+  \]
+  Assume $f$ is not a square in $\overline{\mathbb{F}}[X]$, $\deg(f) = m > 0$, $q > 6m$, $f(0) \neq 0$, and $r_j, s_j \in \mathbb{F}[X]$ have degree $\leq \lceil\frac{q-m}{2}\rceil - 1$. Then $r(X) = 0$ if and only if $r_j(X) = s_j(X) = 0$ for all $j$.
+
+  \textbf{Note:} This lemma requires $f(0) \neq 0$. The general case (without this hypothesis) is handled by Lemma~\ref{lem:stepanov-nonzero} which applies a shift transformation first. The degree bound $\leq \lceil\frac{q-m}{2}\rceil - 1$ is essential: it ensures $2\deg(r_k) + m < q$ (strict inequality), which is needed for the polynomial equality step. The hypothesis $m > 0$ ensures that the degree bound conversion works properly. The weaker bound $\leq \lfloor\frac{q-m}{2}\rfloor$ admits counterexamples.
+
+  \textbf{Degree bound conversion:} To apply Lemma~\ref{lem:stepanov-nonzero-polynomial-equality}, we need $2\deg(r_k) + m < q$. The bound $n \leq \lceil(q-m)/2\rceil - 1$ implies $(n : \mathbb{Q}) < (q-m)/2$, which gives $2n + m < q$.
+\end{lemma}
+\begin{proof} \leanok
+  Suppose $r = 0$ but some $r_j$ or $s_j \neq 0$.
+
+  \textbf{Step 1 (Minimal index):} Let $k$ be the smallest index with $r_k \neq 0$ or $s_k \neq 0$. By Lemma~\ref{lem:stepanov-nonzero-minimal-congruence}, $r_k + s_k f^c \equiv 0 \pmod{X^q}$.
+
+  \textbf{Step 2 (Polynomial equality):} By Lemma~\ref{lem:stepanov-nonzero-polynomial-equality}, the congruence implies $r_k(X)^2 f(X) = s_k(X)^2 f(0)$.
+
+  \textbf{Step 3 (Non-vanishing coefficient):} If $s_k = 0$, then $r_k^2 f = 0$ forces $r_k = 0$ (since $f$ is not identically zero), contradicting the minimal choice of $k$. Hence $s_k \neq 0$.
+
+  \textbf{Step 4 (Contradiction):} By Lemma~\ref{lem:stepanov-square-from-eq}, the equality $r_k(X)^2 f(X) = s_k(X)^2 f(0)$ with $f(0) \neq 0$ and $s_k \neq 0$ implies that $f$ is a square in $\overline{\mathbb{F}}[X]$, contradicting the hypothesis.
+\end{proof}
+
+\begin{lemma}[Coefficient transformation under shift]\label{lem:coefficient-transformation-shift} \leanok \lean{coefficient_transformation_shift}
+  Let $A_0, \ldots, A_{J-1} \in \mathbb{F}[X]$ and define $R_k := \sum_{j=k}^{J-1} \binom{j}{k} a^{j-k} A_j$ for $k = 0, \ldots, J-1$. Then
+  \begin{align*}
+    \sum_{j=0}^{J-1} A_j (X^q + a)^j = \sum_{k=0}^{J-1} R_k X^{kq}.
+  \end{align*}
+  This expresses the change of basis from powers of $(X^q + a)$ to powers of $X^q$.
+\end{lemma}
+\begin{proof} \leanok
+  By the binomial theorem, $(X^q + a)^j = \sum_{k=0}^{j} \binom{j}{k} a^{j-k} X^{kq}$. Substituting and exchanging the order of summation:
+  \begin{align*}
+    \sum_{j=0}^{J-1} A_j (X^q + a)^j & = \sum_{j=0}^{J-1} A_j \sum_{k=0}^{j} \binom{j}{k} a^{j-k} X^{kq}                                               \\
+                                     & = \sum_{k=0}^{J-1} \left(\sum_{j=k}^{J-1} \binom{j}{k} a^{j-k} A_j\right) X^{kq} = \sum_{k=0}^{J-1} R_k X^{kq}.
+  \end{align*}
+\end{proof}
+
+\begin{lemma}[Triangular inversion for shifted families]\label{lem:triangular-inversion-shift} \leanok \lean{triangular_inversion_shift}
+  Let $A_0, \ldots, A_{J-1} \in \mathbb{F}[X]$ and define $R_k := \sum_{j=k}^{J-1} \binom{j}{k} a^{j-k} A_j$ for $k = 0, \ldots, J-1$. Then $R_k = 0$ for all $k = 0, \ldots, J-1$ if and only if $A_j = 0$ for all $j = 0, \ldots, J-1$.
+
+  More precisely, the coefficient matrix $M_{kj} = \binom{j}{k} a^{j-k}$ (for $k \leq j$, zero otherwise) is upper triangular with $M_{jj} = 1$ on the diagonal, hence invertible.
+\end{lemma}
+\begin{proof} \leanok
+  The transformation $A \mapsto R$ is given by an upper triangular matrix with ones on the diagonal (since $\binom{j}{j} a^0 = 1$). Such a matrix is invertible over any field, so $R = 0$ if and only if $A = 0$.
+
+  Alternatively, proceed by backward induction on $k$: for $k = J-1$, we have $R_{J-1} = A_{J-1}$, so $R_{J-1} = 0$ implies $A_{J-1} = 0$. For $k < J-1$, assuming $A_j = 0$ for all $j > k$, we have $R_k = \binom{k}{k} a^0 A_k = A_k$, so $R_k = 0$ implies $A_k = 0$.
+\end{proof}
+
+\begin{lemma}[Non-vanishing of Stepanov polynomial (general case)]\label{lem:stepanov-nonzero} \leanok \lean{stepanov_nonzero}
+  \uses{lem:stepanov-nonzero-eval-zero, lem:stepanov-nonzero-shift-preserves, lem:coefficient-transformation-shift, lem:triangular-inversion-shift}
+  Let $\mathbb{F} = \mathbb{F}_q$ be a finite field of odd characteristic and let
+  \[
+    r(X) = f(X)^\ell \sum_{0 \leq j < J} (r_j(X) + s_j(X) f(X)^c) X^{jq},
+    \qquad c = \frac{q-1}{2}.
+  \]
+  Assume $f$ is not a square in $\overline{\mathbb{F}}[X]$, $\deg(f) = m > 0$, $q > 6m$, and $r_j, s_j \in \mathbb{F}[X]$ have degree $\leq \lceil\frac{q-m}{2}\rceil - 1$. Then $r(X) = 0$ if and only if $r_j(X) = s_j(X) = 0$ for all $j$.
+
+  \textbf{Note:} The hypothesis $m > 0$ ensures that the degree bound conversion works properly and that we can find a non-root point for the shift transformation when $f(0) = 0$.
+\end{lemma}
+\begin{proof} \leanok
+  \textbf{Case $f(0) \neq 0$:} Apply Lemma~\ref{lem:stepanov-nonzero-eval-zero} directly.
+
+  \textbf{Case $f(0) = 0$:} Since $\deg(f) = m > 0$ and $q > 6m > m$, the polynomial $f$ has at most $m$ roots in $\mathbb{F}$, so there exists $a \in \mathbb{F}$ with $f(a) \neq 0$. Define $g(X) := f(X + a)$, so $g(0) = f(a) \neq 0$. By Lemma~\ref{lem:stepanov-nonzero-shift-preserves}, $g$ is not a square in $\overline{\mathbb{F}}[X]$.
+
+  Define $\tilde{r}_j(X) = r_j(X+a)$ and $\tilde{s}_j(X) = s_j(X+a)$. The shift map preserves degree, so $\tilde{r}_j, \tilde{s}_j$ have the same degrees as $r_j, s_j$ respectively (at most $\lceil\frac{q-m}{2}\rceil - 1$).
+
+  Substituting $X \mapsto X + a$ in $r$ yields
+  \begin{align*}
+    r(X + a) = g(X)^\ell \sum_{0 \leq j < J} (\tilde{r}_j(X) + \tilde{s}_j(X) g(X)^c) (X + a)^{jq}.
+  \end{align*}
+  Since $a^q = a$ in $\mathbb{F}_q$, we have $(X + a)^q = X^q + a$, hence $(X + a)^{jq} = (X^q + a)^j$. Expanding $(X^q + a)^j$ by the binomial theorem and collecting powers of $X^{kq}$ gives new coefficient families $R_k, S_k$ related to $\tilde{r}_j, \tilde{s}_j$ by the triangular transformation of Lemma~\ref{lem:coefficient-transformation-shift}.
+
+  This produces new coefficient families $R_k, S_k$ with a triangular relation. The triangular transformation preserves the degree bounds for the coefficients, so $R_k$ and $S_k$ still satisfy the hypotheses of Lemma~\ref{lem:stepanov-nonzero-eval-zero}. Since $g(0) = f(a) \neq 0$, we can apply Lemma~\ref{lem:stepanov-nonzero-eval-zero} to the rewritten polynomial to conclude that $r(X + a) = 0$ if and only if $R_k = S_k = 0$ for all $k$. By Lemma~\ref{lem:triangular-inversion-shift}, this holds if and only if $\tilde{r}_j = \tilde{s}_j = 0$ for all $j$.
+
+  The shift map $p(X) \mapsto p(X+a)$ is an automorphism of $\mathbb{F}[X]$ with inverse $p(X) \mapsto p(X-a)$, so $\tilde{r}_j = \tilde{s}_j = 0$ for all $j$ if and only if $r_j = s_j = 0$ for all $j$. Since $r(X) = 0$ if and only if $r(X+a) = 0$, the result follows.
+\end{proof}
+
+
+\begin{lemma}[Dimension counting (ceiling-based $J$)]\label{lem:dimension-counting-nat} \leanok \lean{stepanov_system_dimension_inequality_nat}
+  \uses{lem:stepanov-system-constraint-count}
+  Let $q > 6m$, $\ell \leq q/3$, $m \geq 2$, $\ell^2 m \geq q$, $d = \lceil\frac{q-m}{2}\rceil - 1$, and define $J := \lceil\frac{\ell}{2} + \frac{\ell^2 m}{q}\rceil$. (Note: $\ell^2 m \geq q$ implies $\frac{\ell^2 m}{q} \geq 1$, so $\frac{\ell}{2} + \frac{\ell^2 m}{q} > 1$ and $J \geq 2$.) Let $B < \sum_{k=0}^{\ell-1} (J + d + k(m-1))$. Then $2J\lceil\frac{q-m}{2}\rceil > B$.
+
+  \textbf{Key insight (why ceiling, not floor):} Using floor for $J$ can fail. For example, with $q = 19$, $m = 3$, $\ell = 3$ (so $\ell^2 m = 27 \geq 19 = q$), we get $J_{\text{floor}} = \lfloor 2.92 \rfloor = 2$, $d = 7$, $A = 2 \cdot 2 \cdot 8 = 32$, and $B$ can be up to $32$ (since $B < 33$), giving $A \not> B$. With ceiling, $J_{\text{ceil}} = 3$, $A = 48$, and $B < 36$, so $A > B$ holds.
+
+  When switching from the exact real $J$ to ceiling-based $J$:
+  \begin{itemize}
+    \item $A = 2J\lceil\frac{q-m}{2}\rceil$ increases by up to $2\lceil\frac{q-m}{2}\rceil$
+    \item $B_{\max}$ increases by up to $\ell$
+    \item Since $2\lceil\frac{q-m}{2}\rceil > \ell$ under hypotheses $q > 6m$, $\ell \leq q/3$, the gap $A - B_{\max}$ \emph{increases}
+  \end{itemize}
+\end{lemma}
+\begin{proof} \leanok
+  Lemma~\ref{lem:stepanov-system-constraint-count} is used in Lean to convert the natural-number bound on $B$ into a real inequality for the constraint count. We then estimate the resulting expression using ceiling arithmetic.
+  Let $J_{\text{real}} := \frac{\ell}{2} + \frac{\ell^2 m}{q}$ and $D := \lceil\frac{q-m}{2}\rceil$. Define $A := 2JD$ and $B_{\max} := \sum_{k=0}^{\ell-1}(J + d + k(m-1))$.
+
+  \textbf{Step 1: Use the exact real value.} Set
+  \begin{align*}
+    A_{\text{real}}      & := 2 J_{\text{real}} D,                                             \\
+    B_{\max,\text{real}} & := \ell(J_{\text{real}} + \tfrac{q-m}{2}) + \tfrac{\ell^2(m-1)}{2}.
+  \end{align*}
+  Since $D \ge \frac{q-m}{2}$, we have $A_{\text{real}} \ge J_{\text{real}}(q-m)$. Thus it suffices to show
+  \begin{align*}
+    J_{\text{real}}(q-m) \ge B_{\max,\text{real}}.
+  \end{align*}
+  This inequality is equivalent to
+  \begin{align*}
+    (J_{\text{real}} - \tfrac{\ell}{2})(q-m-\ell) \ge \tfrac{\ell^2 m}{2}.
+  \end{align*}
+  Since $q > 6m$ and $\ell \leq q/3$, we have $q-m-\ell \geq q/2$. Using $J_{\text{real}} - \tfrac{\ell}{2} = \tfrac{\ell^2 m}{q}$ gives
+  \begin{align*}
+    (J_{\text{real}} - \tfrac{\ell}{2})\tfrac{q}{2} = \tfrac{\ell^2 m}{2},
+  \end{align*}
+  so the inequality holds.
+
+  \textbf{Step 2: Compare ceiling to real.} Since $J = \lceil J_{\text{real}} \rceil \geq J_{\text{real}}$, let $\delta := J - J_{\text{real}} \in [0, 1)$. Then:
+  \begin{align*}
+    A        & = 2JD = 2(J_{\text{real}} + \delta)D = A_{\text{real}} + 2\delta D,                                             \\
+    B_{\max} & = \ell(J + d) + (m-1)\frac{\ell(\ell-1)}{2} = B_{\max,\text{real}} + \ell\delta + \text{(ceiling adjustments)}.
+  \end{align*}
+
+  \textbf{Step 3: Show the gap increases.} The change in $A$ is $\Delta A = 2\delta D$. The change in $B_{\max}$ is at most $\Delta B = \ell\delta$. Since:
+  \begin{align*}
+    2D = 2\lceil\tfrac{q-m}{2}\rceil \geq q - m > q - \tfrac{q}{6} - \tfrac{q}{3} = \tfrac{q}{2} > \tfrac{2q}{3} \geq 2\ell,
+  \end{align*}
+  we have $\Delta A = 2\delta D > \ell\delta = \Delta B$ when $\delta > 0$. Hence $A > B_{\max}$ in that case.
+
+  If $\delta = 0$, then $A = A_{\text{real}}$ and $B_{\max} = B_{\max,\text{real}}$, so $A \ge B_{\max} > B$. In all cases, $A > B$.
+\end{proof}
+
+\begin{lemma}[Stepanov vanishing at roots of $f$]\label{lem:stepanov-vanishing-roots} \leanok \lean{stepanov_vanishing_roots}
+  Let $f, g \in \mathbb{F}[X]$, let $\ell \ge 1$, and let $x \in \mathbb{F}$ with $f(x) = 0$. Then
+  \[
+    (E^k(f^\ell g))(x) = 0 \quad \text{for all } k < \ell.
+  \]
+\end{lemma}
+\begin{proof} \leanok
+  The divisibility lemma for Hasse derivatives gives
+  \[
+    E^k(f^\ell g) = f^{\ell-k} \cdot Q
+  \]
+  for some $Q \in \mathbb{F}[X]$ when $k < \ell$. Evaluating at $x$ with $f(x)=0$ yields
+  $E^k(f^\ell g)(x) = 0$.
+\end{proof}
+
+\begin{lemma}[Stepanov vanishing at nonzeros via linear system]\label{lem:stepanov-vanishing-nonzeros} \leanok \lean{stepanov_vanishing_nonzeros}
+  \uses{lem:stepanov-form}
+  Let $\mathbb{F} = \mathbb{F}_q$ be a finite field and
+  \[
+    r(X) = f(X)^\ell \sum_{0 \leq j < J} (r_j(X) + s_j(X) f(X)^c) X^{jq},
+    \qquad c = \frac{q-1}{2},
+  \]
+  and let $r_j^{(k)}, s_j^{(k)}$ be the quotients appearing in Lemma~\ref{lem:stepanov-form}. Assume moreover that $\ell \le q$ (so $k < q$ for all $k < \ell$). For any $x \in \mathbb{F}$ with $f(x) \neq 0$ and $f(x)^c = a$, if
+  \[
+    \sum_{0 \leq j < J} \big(r_j^{(k)}(x) + a \cdot s_j^{(k)}(x)\big) x^j = 0
+    \quad \text{for all } k < \ell,
+  \]
+  then $(E^k r)(x) = 0$ for all $k < \ell$.
+\end{lemma}
+\begin{proof} \leanok
+  For such an $x$, Lemma~\ref{lem:stepanov-form} gives
+  \begin{align*}
+    E^k(r)(x) = f(x)^{\ell-k} \sum_{0 \leq j < J} (r_j^{(k)}(x) + a \cdot s_j^{(k)}(x)) x^j,
+  \end{align*}
+  using $x^q = x$ in $\mathbb{F}$.
+  Since $f(x) \neq 0$ and the sum vanishes by hypothesis, we have $(E^k r)(x) = 0$.
+\end{proof}
+
+\begin{lemma}[Constraint count for Stepanov system]\label{lem:stepanov-system-constraint-count} \leanok \lean{stepanov_system_constraint_count}
+  Let $q > 6m$, $\ell \leq q/3$, $m \geq 2$, $d = \lceil\frac{q-m}{2}\rceil - 1$, and $J \geq 1$. If $\deg(\sigma^{(k)}) \leq J-1 + d + k(m-1)$ for each $k < \ell$, then the total number of constraints from requiring $\sigma^{(k)}(x) = 0$ for all $k < \ell$ and all relevant $x$ satisfies (in $\mathbb{R}$):
+  \begin{align*}
+    B & \leq \ell J + \ell d + \frac{\ell(\ell-1)(m-1)}{2},              \\
+    B & < \ell \left(J + \frac{q-m}{2} + \frac{(\ell-1)(m-1)}{2}\right).
+  \end{align*}
+  Note: The second inequality uses real arithmetic (true division), not natural number floor division. This matches the real-valued formulation used in the dimension inequality.
+\end{lemma}
+\begin{proof} \leanok
+  A nonzero polynomial of degree $D$ can vanish at at most $D$ points. Each term $(r_j^{(k)}(X) + a \cdot s_j^{(k)}(X)) X^j$ has degree at most $d + k(m-1) + j$, so
+  \begin{align*}
+    \deg(\sigma^{(k)}) \leq J-1 + d + k(m-1).
+  \end{align*}
+  Therefore each $\sigma^{(k)}$ yields at most $(J-1 + d + k(m-1)) + 1 = J + d + k(m-1)$ constraints. Summing over $k < \ell$:
+  \begin{align*}
+    B & \leq \sum_{k=0}^{\ell-1} (J + d + k(m-1)) = \ell J + \ell d + (m-1)\sum_{k=0}^{\ell-1} k \\
+      & = \ell J + \ell d + \frac{\ell(\ell-1)(m-1)}{2}.
+  \end{align*}
+  For the second inequality, since $d = \lceil\frac{q-m}{2}\rceil - 1$ and the ceiling function satisfies $\lceil x \rceil - 1 < x$ for $x > 0$, we have $d < \frac{q-m}{2}$ in $\mathbb{R}$. Therefore $\ell d < \ell \cdot \frac{q-m}{2}$, giving $B < \ell J + \ell \cdot \frac{q-m}{2} + \frac{\ell(\ell-1)(m-1)}{2}$, which equals the stated bound.
+\end{proof}
+
+\begin{lemma}[Existence of nonzero kernel element]\label{lem:exists-nonzero-solution-of-finrank-lt} \leanok \lean{exists_nonzero_solution_of_finrank_lt}
+  Let $V$ and $W$ be finite-dimensional $\mathbb{F}$-vector spaces and let $L : V \to W$ be a linear map. If $\mathrm{finrank}(W) < \mathrm{finrank}(V)$, then there exists a nonzero $v \in V$ with $L(v) = 0$.
+\end{lemma}
+\begin{proof} \leanok
+  By the rank-nullity theorem, $\mathrm{finrank}(V) = \mathrm{finrank}(\mathrm{range}(L)) + \mathrm{finrank}(\ker(L))$. Since $\mathrm{finrank}(\mathrm{range}(L)) \leq \mathrm{finrank}(W) < \mathrm{finrank}(V)$, we have $\mathrm{finrank}(\ker(L)) > 0$. Therefore $\ker(L) \neq \{0\}$, so there exists nonzero $v \in \ker(L)$. In Lean, use \texttt{LinearMap.finrank\_range\_add\_finrank\_ker} and \texttt{Submodule.exists\_mem\_ne\_zero\_of\_ne\_bot}.
+\end{proof}
+
+\begin{lemma}[Degree bound from polynomial subspace]\label{lem:natDegree-le-of-mem-degreeLT-succ} \leanok \lean{natDegree_le_of_mem_degreeLT_succ}
+  Let $p \in \mathbb{F}[X]_{<d+1}$ be an element of the subspace of polynomials of degree $< d+1$. Then $\deg(p) \leq d$.
+\end{lemma}
+\begin{proof} \leanok
+  If $p = 0$, then $\deg(p) = 0 \leq d$. Otherwise, $\deg(p) = \mathrm{natDegree}(p)$ and since $p \in \mathbb{F}[X]_{<d+1}$, we have $\deg(p) < d+1$, hence $\mathrm{natDegree}(p) < d+1$, so $\mathrm{natDegree}(p) \leq d$.
+\end{proof}
+
+\begin{lemma}[Dimension inequality for ceiling-based $J$]\label{lem:stepanov-dimension-inequality-ceil} \leanok \lean{stepanov_dimension_inequality_ceil}
+  \uses{lem:dimension-counting-nat}
+  Let $q > 6m$, $\ell \leq q/3$, $m \geq 2$, $\ell^2 m \geq q$, $d = \lceil\frac{q-m}{2}\rceil - 1$, and define $J := \lceil\frac{\ell}{2} + \frac{\ell^2 m}{q}\rceil$. Let $V = (\mathbb{F}[X]_{\leq d})^{2J}$ and let $W$ be the constraint space with dimension bounded by
+  \begin{align*}
+    \mathrm{finrank}(W) < \sum_{k=0}^{\ell-1} (J + d + k(m-1)).
+  \end{align*}
+  Then $\mathrm{finrank}(W) < \mathrm{finrank}(V)$.
+\end{lemma}
+\begin{proof} \leanok
+  Since $\ell \geq 1$ (as $\ell^2 m \geq q > 0$) and $q > 0$, the expression $\frac{\ell}{2} + \frac{\ell^2 m}{q}$ is positive, so $J = \left\lceil \frac{\ell}{2} + \frac{\ell^2 m}{q} \right\rceil \geq 1$.
+
+  By definition, $V$ is a product of $2J$ copies of $\mathbb{F}[X]_{\leq d}$, each of dimension $d+1$, so
+  \begin{align*}
+    \mathrm{finrank}(V) = 2J(d+1) = 2J\lceil\tfrac{q-m}{2}\rceil.
+  \end{align*}
+
+  Let $B := \sum_{k=0}^{\ell-1}(J + d + k(m-1))$. By hypothesis, $\mathrm{finrank}(W) \leq B$.
+
+  The hypotheses $q > 6m$, $\ell \leq q/3$, $m \geq 2$, and $\ell^2 m \geq q$ satisfy the requirements of Lemma~\ref{lem:dimension-counting-nat}. Therefore:
+  \begin{align*}
+    2J\lceil\tfrac{q-m}{2}\rceil > B \geq \mathrm{finrank}(W).
+  \end{align*}
+
+  Hence $\mathrm{finrank}(V) = 2J\lceil\tfrac{q-m}{2}\rceil > \mathrm{finrank}(W)$.
+\end{proof}
+
+\begin{lemma}[Stepanov linear system has solution]\label{lem:stepanov-system-has-solution} \leanok \lean{stepanov_system_has_solution}
+  \uses{lem:stepanov-dimension-inequality-ceil, lem:exists-nonzero-solution-of-finrank-lt, lem:natDegree-le-of-mem-degreeLT-succ}
+  Let $\mathbb{F}$ be a finite field with $|\mathbb{F}| = q$ and let $f \in \mathbb{F}[X]$ have degree $m$. Assume $q > 6m$, $\ell \leq q/3$, $m \geq 2$, $\ell^2 m \geq q$, $c = \frac{q-1}{2}$, $d = \lceil\frac{q-m}{2}\rceil - 1$, and $J := \lceil\frac{\ell}{2} + \frac{\ell^2 m}{q}\rceil$. Let $T := \{x \in \mathbb{F} : f(x) \neq 0 \text{ and } f(x)^c = a\}$. There exists a nonzero tuple $(r_0, s_0, \ldots, r_{J-1}, s_{J-1})$ with $r_j, s_j \in \mathbb{F}[X]$ of degree at most $d$ such that for all $x \in T$ and all $k < \ell$:
+  \begin{align*}
+    \sum_{j=0}^{J-1} \left( r_j^{(k)}(x) + a \cdot s_j^{(k)}(x) \right) x^j = 0,
+  \end{align*}
+  where $r_j^{(k)} := E^k(f^\ell r_j)/f^{\ell-k}$ and $s_j^{(k)} := E^k(f^{\ell+c} s_j)/f^{\ell+c-k}$ (the Hasse-quotient polynomials used to build $L$).
+
+  \textbf{Note:} In the intended application (Stepanov's method), $\ell = \lceil\sqrt{q}\rceil$ and $m \geq 3$. Then $\ell^2 \geq q$ and $m \geq 2$, so $\ell^2 m \geq 2q > q$.
+\end{lemma}
+\begin{proof} \leanok
+  \textbf{Step 1: Linear-algebra setup.} Let $V = (\mathbb{F}[X]_{< d+1})^{2J}$ and let
+  \[
+    W = \prod_{k=0}^{\ell-1} \mathbb{F}[X]_{< J + d + k(m-1)}.
+  \]
+  Using coordinate projections and the Hasse-quotient maps
+  \[
+    p \mapsto \frac{E^k(f^\ell p)}{f^{\ell-k}}, \qquad
+    p \mapsto \frac{E^k(f^{\ell+c} p)}{f^{\ell+c-k}},
+  \]
+  we build a linear map $L : V \to W$ whose $k$-th component is
+  \[
+    \sigma^{(k)}(X) = \sum_{j=0}^{J-1} \big(r_j^{(k)}(X) + a \cdot s_j^{(k)}(X)\big) X^j.
+  \]
+
+  \textbf{Step 2: Degree bounds.} A degree bound for the Hasse-quotient maps gives
+  $\deg(\sigma^{(k)}) \leq J-1 + d + k(m-1)$, so $L$ really lands in $W$.
+  A standard finrank computation yields $\mathrm{finrank}(W) = B := \sum_{k=0}^{\ell-1}(J + d + k(m-1))$.
+
+  \textbf{Step 3: Dimension inequality.} Lemma~\ref{lem:stepanov-dimension-inequality-ceil}
+  shows $\mathrm{finrank}(W) < \mathrm{finrank}(V)$.
+  Therefore, by Lemma~\ref{lem:exists-nonzero-solution-of-finrank-lt}, there exists a nonzero
+  $v \in \ker(L)$.
+
+  \textbf{Step 4: Extract polynomials.} Let $r_j, s_j$ be the coordinate polynomials coming
+  from $v$, and set them to zero outside $j < J$. By
+  Lemma~\ref{lem:natDegree-le-of-mem-degreeLT-succ} we have $\deg(r_j), \deg(s_j) \leq d$.
+  The equation $L(v)=0$ is exactly the linear system in the statement.
+\end{proof}
+
+\begin{lemma}[Stepanov constructed polynomial is nonzero]\label{lem:stepanov-constructed-nonzero} \leanok \lean{stepanov_constructed_nonzero}
+  \uses{lem:stepanov-nonzero}
+  Let $\mathbb{F} = \mathbb{F}_q$ be a finite field of odd characteristic and let $f \in \mathbb{F}[X]$ have degree $m$ with $m > 0$ and $q > 6m$. Assume $f$ is not a square in $\overline{\mathbb{F}}[X]$, set $c = \frac{q-1}{2}$ and $d = \lceil\frac{q-m}{2}\rceil - 1$, and let $(r_0, s_0, \ldots, r_{J-1}, s_{J-1})$ be a nonzero solution with $\deg(r_j), \deg(s_j) \leq d$. Then
+  \[
+    r(X) = f(X)^\ell \sum_{0 \leq j < J} (r_j(X) + s_j(X) f(X)^c) X^{jq}
+  \]
+  is nonzero.
+\end{lemma}
+\begin{proof} \leanok
+  By Lemma~\ref{lem:stepanov-nonzero}, since $f$ is not a square in $\overline{\mathbb{F}}[X]$ and $\deg(r_j), \deg(s_j) \leq d = \lceil\frac{q-m}{2}\rceil - 1 < \frac{q-m}{2}$, the polynomial $r$ is zero if and only if all $r_j = s_j = 0$. Since the solution is nonzero, at least one $r_j$ or $s_j$ is nonzero. Therefore $r$ is nonzero.
+\end{proof}
+
+\begin{proposition}[Stepanov polynomial existence]\label{prop:stepanov-polynomial} \leanok \lean{stepanov_polynomial}
+  \uses{def:set-sa, lem:stepanov-system-has-solution, lem:stepanov-constructed-nonzero, lem:stepanov-vanishing-roots, lem:stepanov-vanishing-nonzeros}
+  Let $\mathbb{F} = \mathbb{F}_q$ be a finite field of odd characteristic and let $f \in \mathbb{F}[X]$ have degree $m \geq 3$ and not be a square in $\overline{\mathbb{F}}[X]$. Fix $a \in \mathbb{F}$ and assume $q > 6m$, $\ell \leq q/3$, and $\ell^2 m \geq q$. Then there exists a nonzero polynomial $r \in \mathbb{F}[X]$ such that
+  \begin{align*}
+    \deg(r) < mq + \frac{\ell q}{2} + \ell^2 m.
+  \end{align*}
+  Moreover, for all $x \in \mathcal{S}_a$ and all $k < \ell$, we have $(E^k r)(x) = 0$.
+\end{proposition}
+\begin{proof} \leanok
+  \textbf{Step 1: Define parameters.} Set $c = \frac{q-1}{2}$, $d = \lceil\frac{q-m}{2}\rceil - 1$, and $J = \lceil\frac{\ell}{2} + \frac{\ell^2 m}{q}\rceil$.
+
+  \textbf{Step 2: Obtain a nonzero solution.} The hypotheses $q > 6m$, $\ell \leq q/3$, $m \geq 2$, and $\ell^2 m \geq q$ satisfy the requirements of Lemma~\ref{lem:stepanov-system-has-solution}. Therefore, there exists a nonzero solution $(r_0, s_0, \ldots, r_{J-1}, s_{J-1})$ with $r_j, s_j \in \mathbb{F}[X]$ of degree at most $d$.
+
+  \textbf{Step 3: Construct the Stepanov polynomial.} Define
+  \begin{align*}
+    r(X) = f(X)^\ell \sum_{0 \leq j < J} (r_j(X) + s_j(X) f(X)^c) X^{jq}.
+  \end{align*}
+
+  \textbf{Step 4: Verify the degree bound.} Since $\deg(r_j), \deg(s_j) \leq d$, each term $(r_j + s_j f^c)X^{jq}$ has degree at most $d + cm + jq$, so
+  \begin{align*}
+    \deg(r) \leq \ell m + d + cm + (J-1)q.
+  \end{align*}
+  Using $d \leq \frac{q-m}{2}$ and $c = \frac{q-1}{2}$, we get
+  \begin{align*}
+    \deg(r) & < \ell m + \frac{q-m}{2} + \frac{(q-1)m}{2} + (J-1)q \\
+            & < \ell m + \frac{q m}{2} + (J-1)q.
+  \end{align*}
+  Since $J = \left\lceil \frac{\ell}{2} + \frac{\ell^2 m}{q} \right\rceil$, we have $J-1 < \frac{\ell}{2} + \frac{\ell^2 m}{q}$, so $(J-1)q < \frac{\ell q}{2} + \ell^2 m$. Therefore,
+  \begin{align*}
+    \deg(r) < mq + \frac{\ell q}{2} + \ell^2 m.
+  \end{align*}
+
+  \textbf{Step 5: Verify $r$ is nonzero.} By Lemma~\ref{lem:stepanov-constructed-nonzero}, since the solution $(r_0, s_0, \ldots, r_{J-1}, s_{J-1})$ is nonzero, the polynomial $r$ is nonzero.
+
+  \textbf{Step 6: Verify Hasse vanishing at points of $\mathcal{S}_a$.} We must show $(E^k r)(x) = 0$ for all $k < \ell$ and all $x \in \mathcal{S}_a$. There are two cases:
+  \begin{itemize}
+    \item If $f(x) = 0$: Lemma~\ref{lem:stepanov-vanishing-roots} gives $(E^k r)(x) = 0$ for all $k < \ell$.
+    \item If $f(x) \neq 0$ and $f(x)^c = a$: The solution satisfies the linear system by construction, so Lemma~\ref{lem:stepanov-vanishing-nonzeros} gives $(E^k r)(x) = 0$ for all $k < \ell$.
+  \end{itemize}
+\end{proof}
+
+\begin{lemma}[Stepanov polynomial bound on $|\mathcal{S}_a|$]\label{lem:riemann-hypothesis-stepanov-bound} \leanok \lean{riemann_hypothesis_stepanov_bound}
+  \uses{def:set-sa, prop:stepanov-polynomial, lem:hasse-divisibility}
+  Let $\mathbb{F}_q$ be a finite field of odd characteristic and let $f \in \mathbb{F}_q[X]$ have degree $m \geq 3$ and not be a square in $\overline{\mathbb{F}}_q[X]$. Let $q > 6m$ and $\ell = \lceil\sqrt{q}\rceil$. For any $a \in \mathbb{F}_q$,
+  \begin{align*}
+    |\mathcal{S}_a| < \frac{q}{2} + 2m\lceil\sqrt{q}\rceil.
+  \end{align*}
+\end{lemma}
+\begin{proof} \leanok
+  \textbf{Step 1: Verify the hypotheses of Proposition~\ref{prop:stepanov-polynomial}.}
+  \begin{itemize}
+    \item $q > 6m$: Given.
+    \item $\ell \leq q/3$: Since $\ell = \lceil\sqrt{q}\rceil \leq \sqrt{q} + 1$ and $q > 6m \geq 18$, we have $\sqrt{q} > 4$, so $\ell < \sqrt{q} + 1 < q/3$ for $q \geq 18$.
+    \item $m \geq 2$: Since $m \geq 3 \geq 2$.
+    \item $\ell^2 m \geq q$: Since $\ell = \lceil\sqrt{q}\rceil$, we have $\ell^2 \geq q$. With $m \geq 3$, we get $\ell^2 m \geq 3q > q$.
+  \end{itemize}
+
+  \textbf{Step 2: Apply Proposition~\ref{prop:stepanov-polynomial}.} There exists a nonzero polynomial $r$ of degree $< mq + \frac{\ell q}{2} + \ell^2 m$ such that $(E^k r)(x) = 0$ for all $x \in \mathcal{S}_a$ and all $k < \ell$.
+
+  \textbf{Step 3: Count zeros with multiplicity.} By Lemma~\ref{lem:hasse-divisibility}, the vanishing of the first $\ell$ Hasse derivatives at $x$ implies $(X-x)^\ell \mid r$. The factors $(X-x)^\ell$ are pairwise coprime, so their product divides $r$, and each $x \in \mathcal{S}_a$ contributes multiplicity at least $\ell$. Therefore:
+  \begin{align*}
+    \ell \cdot |\mathcal{S}_a| \leq \deg(r) < mq + \tfrac{\ell q}{2} + \ell^2 m.
+  \end{align*}
+
+  \textbf{Step 4: Derive the bound.} Dividing by $\ell = \lceil\sqrt{q}\rceil$ and using $\ell \geq \sqrt{q}$:
+  \begin{align*}
+    |\mathcal{S}_a| < \frac{mq}{\ell} + \frac{q}{2} + \ell m \leq \frac{mq}{\sqrt{q}} + \frac{q}{2} + \ell m = m\sqrt{q} + \frac{q}{2} + \ell m.
+  \end{align*}
+  Since $\sqrt{q} \leq \lceil\sqrt{q}\rceil = \ell$, we have $m\sqrt{q} \leq m\ell$. Thus:
+  \begin{align*}
+    |\mathcal{S}_a| < m\ell + \frac{q}{2} + \ell m = \frac{q}{2} + 2m\ell = \frac{q}{2} + 2m\lceil\sqrt{q}\rceil.
+  \end{align*}
+\end{proof}
+
+\begin{lemma}[Upper bound on point count]\label{lem:riemann-hypothesis-upper-bound} \leanok \lean{riemann_hypothesis_upper_bound}
+  \uses{def:hyperelliptic-curve, def:set-sa, lem:riemann-hypothesis-stepanov-bound}
+  Let $C_f : y^2 = f(x)$ be a hyperelliptic curve over $\mathbb{F}_q$ of odd characteristic, where $f \in \mathbb{F}_q[X]$ has degree $m \geq 3$ and is not a square in $\overline{\mathbb{F}}_q[X]$. If $q > 6m$, then
+  \begin{align*}
+    \#C_f(\mathbb{F}_q) < q + 4m\lceil\sqrt{q}\rceil.
+  \end{align*}
+\end{lemma}
+\begin{proof} \leanok
+  Let $N = \#C_f(\mathbb{F}_q)$, $c = \frac{q-1}{2}$. Let $N_0 = \#\{x : f(x) = 0\}$ and $N_1 = \#\{x : f(x)^c = 1\}$. Then $N = N_0 + 2N_1$.
+
+  By Definition~\ref{def:set-sa}, taking $a = 1$, we have $\mathcal{S}_1 = \{x : f(x) = 0 \text{ or } f(x)^c = 1\}$, so $|\mathcal{S}_1| = N_0 + N_1$. Since $N = N_0 + 2N_1 = (N_0 + N_1) + N_1 = |\mathcal{S}_1| + N_1$ and $N_1 \leq |\mathcal{S}_1|$, we have $N \leq 2|\mathcal{S}_1|$. By Lemma~\ref{lem:riemann-hypothesis-stepanov-bound},
+  \begin{align*}
+    N \leq 2|\mathcal{S}_1| < 2\left(\frac{q}{2} + 2m\lceil\sqrt{q}\rceil\right) = q + 4m\lceil\sqrt{q}\rceil.
+  \end{align*}
+\end{proof}
+
+\begin{lemma}[Lower bound on point count]\label{lem:riemann-hypothesis-lower-bound} \leanok \lean{riemann_hypothesis_lower_bound}
+  \uses{def:hyperelliptic-curve, def:set-sa, lem:riemann-hypothesis-stepanov-bound}
+  Let $C_f : y^2 = f(x)$ be a hyperelliptic curve over $\mathbb{F}_q$ of odd characteristic, where $f \in \mathbb{F}_q[X]$ has degree $m \geq 3$ and is not a square in $\overline{\mathbb{F}}_q[X]$. If $q > 6m$, then
+  \begin{align*}
+    \#C_f(\mathbb{F}_q) > q - 4m\lceil\sqrt{q}\rceil.
+  \end{align*}
+\end{lemma}
+\begin{proof} \leanok
+  Let $N = \#C_f(\mathbb{F}_q)$, $c = \frac{q-1}{2}$. Let $N_0 = \#\{x : f(x) = 0\}$ and $N_1 = \#\{x : f(x)^c = 1\}$. Then $N = N_0 + 2N_1$.
+
+  For $x \in \mathbb{F}_q$ with $f(x) \neq 0$, the value $f(x)^c$ is the Legendre symbol of $f(x)$, so $f(x)^c \in \{-1, 1\}$. Let $N_{-1} = \#\{x : f(x) \neq 0 \text{ and } f(x)^c = -1\}$. Then $q = N_0 + N_1 + N_{-1}$.
+
+  By Definition~\ref{def:set-sa}, taking $a = -1$, we have $\mathcal{S}_{-1} = \{x : f(x) = 0 \text{ or } f(x)^c = -1\}$, so $|\mathcal{S}_{-1}| = N_0 + N_{-1}$. By Lemma~\ref{lem:riemann-hypothesis-stepanov-bound},
+  \begin{align*}
+    |\mathcal{S}_{-1}| = N_0 + N_{-1} < \frac{q}{2} + 2m\lceil\sqrt{q}\rceil.
+  \end{align*}
+  Since $q = N_0 + N_1 + N_{-1}$, we have $q - N_1 = N_0 + N_{-1} = |\mathcal{S}_{-1}|$, so
+  \begin{align*}
+    q - N_1 < \frac{q}{2} + 2m\lceil\sqrt{q}\rceil, \quad \text{hence} \quad N_1 > \frac{q}{2} - 2m\lceil\sqrt{q}\rceil.
+  \end{align*}
+  Since $N = N_0 + 2N_1 \geq 2N_1$ (as $N_0 \geq 0$), we obtain
+  \begin{align*}
+    N \geq 2N_1 > 2\left(\frac{q}{2} - 2m\lceil\sqrt{q}\rceil\right) = q - 4m\lceil\sqrt{q}\rceil.
+  \end{align*}
+\end{proof}
+
+\begin{theorem}[Riemann Hypothesis for hyperelliptic curves]\label{thm:riemann-hypothesis-hec} \leanok \lean{riemann_hypothesis_hec}
+  \uses{lem:riemann-hypothesis-upper-bound, lem:riemann-hypothesis-lower-bound}
+  Let $C_f : y^2 = f(x)$ be a hyperelliptic curve over $\mathbb{F}_q$ where $f \in \mathbb{F}_q[X]$ has degree $m \geq 3$ and is not a square in $\overline{\mathbb{F}}_q[X]$. If $q > 6m$, then
+  \begin{align*}
+    \big|q - \#C_f(\mathbb{F}_q)\big| < 5m\sqrt{q}.
+  \end{align*}
+\end{theorem}
+\begin{proof} \leanok
+  Let $N = \#C_f(\mathbb{F}_q)$.
+
+  If $\text{char}(\mathbb{F}_q) = 2$, the Frobenius map $y \mapsto y^2$ is a bijection on $\mathbb{F}_q$, so for each $x \in \mathbb{F}_q$ there is exactly one $y$ with $y^2 = f(x)$. Hence $N = q$, and $|N - q| = 0 < 5m\sqrt{q}$.
+
+  If $\text{char}(\mathbb{F}_q) \neq 2$, by Lemma~\ref{lem:riemann-hypothesis-upper-bound} and Lemma~\ref{lem:riemann-hypothesis-lower-bound}, we have
+  \begin{align*}
+    q - 4m\lceil\sqrt{q}\rceil < N < q + 4m\lceil\sqrt{q}\rceil,
+  \end{align*}
+  so $|N - q| < 4m\lceil\sqrt{q}\rceil$. Since $\lceil\sqrt{q}\rceil < \sqrt{q} + 1$ and $q > 6m \geq 18$ implies $\sqrt{q} > 4$, we have
+  \begin{align*}
+    4m\lceil\sqrt{q}\rceil < 4m(\sqrt{q} + 1) = 4m\sqrt{q} + 4m < 4m\sqrt{q} + m\sqrt{q} = 5m\sqrt{q}.
+  \end{align*}
+\end{proof}
