@@ -1,4 +1,5 @@
 import Mathlib
+import RiemannHypothesisCurves.Utils
 import RiemannHypothesisCurves.StepanovVanishing
 
 lemma stepanov_sigma_degree_bound_fin
@@ -46,74 +47,33 @@ by
   have h_sum :
       ∑ k ∈ Finset.range ℓ, (J + d + k * (m - 1)) =
         ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 := by
-    have h_split :
-        ∑ k ∈ Finset.range ℓ, (J + d + k * (m - 1)) =
-          (∑ k ∈ Finset.range ℓ, (J + d)) +
-            ∑ k ∈ Finset.range ℓ, k * (m - 1) := by
-      calc
-        ∑ k ∈ Finset.range ℓ, (J + d + k * (m - 1)) =
-            ∑ k ∈ Finset.range ℓ, ((J + d) + k * (m - 1)) := by
-              refine Finset.sum_congr rfl ?_
-              intro k hk; simp [add_assoc]
-        _ = (∑ k ∈ Finset.range ℓ, (J + d)) +
-              ∑ k ∈ Finset.range ℓ, k * (m - 1) := by
-              simp [Finset.sum_add_distrib]
-    have h_lin1 :
-        ∑ k ∈ Finset.range ℓ, k * (m - 1) =
-          (∑ k ∈ Finset.range ℓ, k) * (m - 1) := by
-      simpa [mul_comm, mul_left_comm, mul_assoc] using
-        (Finset.sum_mul (s := Finset.range ℓ)
-          (f := fun k : ℕ => k) (a := m - 1)).symm
-    have h_sum_id :
-        ∑ k ∈ Finset.range ℓ, k = ℓ * (ℓ - 1) / 2 :=
-      Finset.sum_range_id ℓ
-    have h_even : Even (ℓ * (ℓ - 1)) := Nat.even_mul_pred_self ℓ
     have h_mul_div :
         (ℓ * (ℓ - 1) / 2) * (m - 1) =
           ℓ * (ℓ - 1) * (m - 1) / 2 := by
-      have hL :
-          2 * ((ℓ * (ℓ - 1) / 2) * (m - 1)) =
-            (ℓ * (ℓ - 1)) * (m - 1) := by
-        have htmp :=
-          Nat.two_mul_div_two_of_even (n := ℓ * (ℓ - 1)) h_even
-        calc
-          2 * ((ℓ * (ℓ - 1) / 2) * (m - 1)) =
-              (2 * (ℓ * (ℓ - 1) / 2)) * (m - 1) := by
-                ac_rfl
-          _ = (ℓ * (ℓ - 1)) * (m - 1) := by
-                simp [htmp]
-      have hR :
-          2 * (ℓ * (ℓ - 1) * (m - 1) / 2) =
-            ℓ * (ℓ - 1) * (m - 1) :=
-        Nat.two_mul_div_two_of_even
-          (n := ℓ * (ℓ - 1) * (m - 1)) (h_even.mul_right (m - 1))
-      have h_eq0 :
-          2 * ((ℓ * (ℓ - 1) / 2) * (m - 1)) =
-            2 * (ℓ * (ℓ - 1) * (m - 1) / 2) := by
-        calc
-          2 * ((ℓ * (ℓ - 1) / 2) * (m - 1)) =
-              (ℓ * (ℓ - 1)) * (m - 1) := hL
-          _ = 2 * (ℓ * (ℓ - 1) * (m - 1) / 2) := by
-                simp [hR]
-      have h_eq :
-          ((ℓ * (ℓ - 1) / 2) * (m - 1)) * 2 =
-            (ℓ * (ℓ - 1) * (m - 1) / 2) * 2 := by
-        simpa [mul_comm, mul_left_comm, mul_assoc] using h_eq0
-      have hne : (2 : ℕ) ≠ 0 := by decide
-      exact mul_right_cancel₀ hne h_eq
+      have h2 : 2 ∣ ℓ * (ℓ - 1) := (Nat.even_mul_pred_self ℓ).two_dvd
+      simpa [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using
+        (Nat.mul_div_right_comm h2 (m - 1)).symm
+    have h_lin :
+        ∑ k ∈ Finset.range ℓ, k * (m - 1) =
+          (∑ k ∈ Finset.range ℓ, k) * (m - 1) := by
+      simpa [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using
+        (Finset.sum_mul (s := Finset.range ℓ)
+          (f := fun k : ℕ => k) (a := m - 1)).symm
     calc
       ∑ k ∈ Finset.range ℓ, (J + d + k * (m - 1)) =
-          (∑ k ∈ Finset.range ℓ, (J + d)) +
-            ∑ k ∈ Finset.range ℓ, k * (m - 1) := h_split
+          ∑ k ∈ Finset.range ℓ, ((J + d) + k * (m - 1)) := by
+            refine Finset.sum_congr rfl ?_
+            intro k hk
+            simp [add_assoc]
+      _ = (∑ k ∈ Finset.range ℓ, (J + d)) +
+            ∑ k ∈ Finset.range ℓ, k * (m - 1) := by
+            simp [Finset.sum_add_distrib]
+      _ = ℓ * (J + d) + (∑ k ∈ Finset.range ℓ, k) * (m - 1) := by
+            simp [Finset.sum_const, Finset.card_range, h_lin]
       _ = ℓ * (J + d) + (ℓ * (ℓ - 1) / 2) * (m - 1) := by
-        simp [Finset.sum_const, Finset.card_range, h_lin1, h_sum_id]
+            simp [Finset.sum_range_id]
       _ = ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 := by
-        calc
-          ℓ * (J + d) + (ℓ * (ℓ - 1) / 2) * (m - 1)
-              = ℓ * J + ℓ * d + (ℓ * (ℓ - 1) / 2) * (m - 1) := by
-                ring
-          _ = ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 := by
-                simp [h_mul_div]
+            simp [Nat.mul_add, Nat.add_assoc, h_mul_div]
   have hB_nat :
       B ≤ ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 := by
     simpa [h_sum] using hB
@@ -212,22 +172,23 @@ lemma stepanov_monotone_in_J
     (hJmono : J₁ ≤ J₂) :
   2 * J₂ * D > ℓ * (J₂ + x) + C :=
 by
+  have hdiff :
+      0 ≤ (2 * J₂ * D - ℓ * (J₂ + x)) - (2 * J₁ * D - ℓ * (J₁ + x)) := by
+    have h : 0 ≤ (J₂ - J₁) * (2 * D - ℓ) :=
+      mul_nonneg (sub_nonneg.mpr hJmono) hD_nonneg
+    have :
+        (2 * J₂ * D - ℓ * (J₂ + x)) - (2 * J₁ * D - ℓ * (J₁ + x)) =
+          (J₂ - J₁) * (2 * D - ℓ) := by
+      ring
+    simpa [this] using h
   have hmono :
-      2 * J₁ * D - ℓ * (J₁ + x) ≤ 2 * J₂ * D - ℓ * (J₂ + x) :=
-    sub_nonneg.mp <| by
-      have h : 0 ≤ (J₂ - J₁) * (2 * D - ℓ) :=
-        mul_nonneg (sub_nonneg.mpr hJmono) hD_nonneg
-      have :
-          (2 * J₂ * D - ℓ * (J₂ + x)) -
-            (2 * J₁ * D - ℓ * (J₁ + x)) =
-            (J₂ - J₁) * (2 * D - ℓ) := by
-        ring
-      simpa [this] using h
-  simpa [add_comm] using
-    (lt_sub_iff_add_lt).1 <|
-      lt_of_lt_of_le
-        ((lt_sub_iff_add_lt).2 (by simpa [add_comm] using hA))
-        hmono
+      2 * J₁ * D - ℓ * (J₁ + x) ≤ 2 * J₂ * D - ℓ * (J₂ + x) := by
+    linarith [hdiff]
+  have hA' : C < 2 * J₁ * D - ℓ * (J₁ + x) := by
+    linarith [hA]
+  have hA'' : C < 2 * J₂ * D - ℓ * (J₂ + x) :=
+    lt_of_lt_of_le hA' hmono
+  linarith [hA'']
 
 lemma stepanov_twoD_sub_ell_pos
     (q m ℓ : ℕ) (hq6m : q > 6 * m) (hℓ : ℓ ≤ q / 3) :
@@ -240,10 +201,7 @@ by
           exact_mod_cast (by simpa [Nat.mul_comm] using hq6m : 6 * m < q)
         simpa [mul_comm] using h
   have hℓ_le_qdiv3 : (ℓ : ℝ) ≤ (q : ℝ) / 3 := by
-    have h1 : (ℓ : ℝ) ≤ ((q / 3 : ℕ) : ℝ) := by exact_mod_cast hℓ
-    have h2 : ((q / 3 : ℕ) : ℝ) ≤ (q : ℝ) / 3 := by
-      simpa using (Nat.cast_div_le (α := ℝ) (m := q) (n := 3))
-    exact le_trans h1 h2
+    exact natCast_le_div ℓ q 3 hℓ
   set x : ℝ := ((q : ℝ) - (m : ℝ)) / 2 with hx
   have h_lt : (ℓ : ℝ) < 2 * (Int.ceil x : ℝ) := by
     have h_ell_lt_qm : (ℓ : ℝ) < (q : ℝ) - (m : ℝ) := by
@@ -470,11 +428,7 @@ by
         simpa [mul_comm] using hq6m_real
       exact (lt_div_iff₀ h6pos).mpr this
     have hℓ_le_qdiv3 : (ℓ : ℝ) ≤ (q : ℝ) / 3 := by
-      have hℓ_le_nat : (ℓ : ℝ) ≤ ((q / 3 : ℕ) : ℝ) := by
-        exact_mod_cast hl
-      have hqdiv3_le : ((q / 3 : ℕ) : ℝ) ≤ (q : ℝ) / 3 := by
-        simpa using (Nat.cast_div_le (α := ℝ) (m := q) (n := 3))
-      exact le_trans hℓ_le_nat hqdiv3_le
+      exact natCast_le_div ℓ q 3 hl
     have h_qmℓ_gt :
         (q : ℝ) / 2 < (q : ℝ) - (m : ℝ) - (ℓ : ℝ) := by
       nlinarith [hm_lt_qdiv6, hℓ_le_qdiv3]

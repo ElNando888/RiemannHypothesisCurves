@@ -581,12 +581,12 @@ theorem riemann_hypothesis_hec
     |((q : ℝ) - (Fintype.card {p : F × F // p.2 ^ 2 = Polynomial.eval p.1 f} : ℝ))|
       < (5 : ℝ) * (f.natDegree : ℝ) * Real.sqrt (q : ℝ) :=
 by
-  have hm_pos : (0 : ℝ) < (f.natDegree : ℝ) :=
-    Nat.cast_pos.mpr (Nat.lt_of_lt_of_le (by norm_num) hm3)
-  have hq_pos : (0 : ℝ) < (q : ℝ) :=
-    Nat.cast_pos.mpr
-      (Nat.lt_trans (Nat.mul_pos (by norm_num)
-        (Nat.lt_of_lt_of_le (by norm_num) hm3)) hq6m)
+  have hdeg_pos : 0 < f.natDegree :=
+    lt_of_lt_of_le (by decide : 0 < 3) hm3
+  have hm_pos : (0 : ℝ) < (f.natDegree : ℝ) := by
+    exact_mod_cast hdeg_pos
+  have hq_pos : (0 : ℝ) < (q : ℝ) := by
+    exact_mod_cast (lt_trans (Nat.mul_pos (by decide : 0 < 6) hdeg_pos) hq6m)
   by_cases hchar2 : ringChar F = 2
   · have hN_eq_q :
         Fintype.card {p : F × F // p.2 ^ 2 = Polynomial.eval p.1 f} = q := by
@@ -605,7 +605,7 @@ by
           right_inv := fun _ => rfl
         })
     simp [hN_eq_q, sub_self, abs_zero]
-    positivity
+    nlinarith [hm_pos, Real.sqrt_pos.2 hq_pos]
   · set N : ℝ :=
       (Fintype.card {p : F × F // p.2 ^ 2 = Polynomial.eval p.1 f} : ℝ)
     have h_abs :
