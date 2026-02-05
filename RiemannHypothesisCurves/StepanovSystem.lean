@@ -267,50 +267,40 @@ by
     have hm1 : (1 : ℝ) ≤ (m : ℝ) := by
       exact_mod_cast (le_trans (show (1 : ℕ) ≤ 2 by decide) hm_ge_two)
     linarith
-  -- compare the quadratic term in ℓ with a simpler upper bound
-  have hcoef_le :
-      ((ℓ : ℝ) - 1) * ((m : ℝ) - 1) ≤ (ℓ : ℝ) * ((m : ℝ) - 1) := by
-    have htmp : (ℓ : ℝ) - 1 ≤ (ℓ : ℝ) :=
-      sub_le_self _ (show (0 : ℝ) ≤ 1 by norm_num)
-    exact mul_le_mul_of_nonneg_right htmp hm1_nonneg
-  have hcoef_div_le :
-      (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 ≤
-        (ℓ : ℝ) * ((m : ℝ) - 1) / 2 := by
-    have h_half_nonneg : 0 ≤ (1 / 2 : ℝ) := by norm_num
-    have := mul_le_mul_of_nonneg_right hcoef_le h_half_nonneg
-    simpa [div_eq_mul_inv, mul_assoc] using this
-  have hterm_mul_le :
-      (ℓ : ℝ) * ((((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) ≤
-        (ℓ : ℝ) * (((ℓ : ℝ) * ((m : ℝ) - 1)) / 2) :=
-    mul_le_mul_of_nonneg_left hcoef_div_le hℓ_nonneg
-  have h_end :
-      (ℓ : ℝ) * (((ℓ : ℝ) * ((m : ℝ) - 1)) / 2) =
-        (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2 := by
-    simp [pow_two, mul_assoc, div_eq_mul_inv]
-  have h_constr_le_Bmax_J :
-      (ℓ : ℝ) *
-          ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2 +
-            (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2)
-        ≤ (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2) +
-            (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2 := by
-    calc
-      (ℓ : ℝ) *
-            ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2 +
-              (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2)
-          = (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2) +
-              (ℓ : ℝ) * ((((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) := by
-            ring
-      _ ≤ (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2) +
-            (ℓ : ℝ) * (((ℓ : ℝ) * ((m : ℝ) - 1)) / 2) :=
-        add_le_add_left hterm_mul_le _
-      _ = (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2) +
-            (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2 := by
-        simp [h_end]
   have hB_lt_Bmax_J :
       (B : ℝ) <
         (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2) +
           (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2 :=
-    lt_of_lt_of_le hB_real_small h_constr_le_Bmax_J
+    by
+      refine lt_of_lt_of_le hB_real_small ?_
+      have hcoef_div_le :
+          (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 ≤
+            (ℓ : ℝ) * ((m : ℝ) - 1) / 2 := by
+        have hℓ' : (ℓ : ℝ) - 1 ≤ (ℓ : ℝ) := by linarith
+        have hmul :
+            ((ℓ : ℝ) - 1) * ((m : ℝ) - 1) ≤
+              (ℓ : ℝ) * ((m : ℝ) - 1) :=
+          mul_le_mul_of_nonneg_right hℓ' hm1_nonneg
+        nlinarith [hmul]
+      have hterm_mul_le :
+          (ℓ : ℝ) * ((((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) ≤
+            (ℓ : ℝ) * ((ℓ : ℝ) * ((m : ℝ) - 1) / 2) :=
+        mul_le_mul_of_nonneg_left hcoef_div_le hℓ_nonneg
+      calc
+        (ℓ : ℝ) *
+              ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2 +
+                (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2)
+            =
+            (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2) +
+              (ℓ : ℝ) * ((((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) := by
+            ring
+        _ ≤ (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2) +
+              (ℓ : ℝ) * ((ℓ : ℝ) * ((m : ℝ) - 1) / 2) := by
+            exact add_le_add_left hterm_mul_le _
+        _ =
+            (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2) +
+              (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2 := by
+            simp [pow_two, mul_assoc, div_eq_mul_inv]
   -- switch to a more convenient notation over ℝ
   set Jreal : ℝ :=
       (ℓ : ℝ) / 2 + ((ℓ : ℝ) ^ 2 * (m : ℝ)) / (q : ℝ) with hJreal_def
