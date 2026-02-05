@@ -385,14 +385,11 @@ by
       have hq_ne : (q : ℝ) ≠ 0 := by
         have hq_pos : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq_pos_nat
         exact ne_of_gt hq_pos
-      calc
-        (Jreal - (ℓ : ℝ) / 2) * ((q : ℝ) / 2)
-            = ((ℓ : ℝ) ^ 2 * (m : ℝ) / (q : ℝ)) * ((q : ℝ) / 2) := by
-              simp [h_eqJ]
-        _ = (((ℓ : ℝ) ^ 2 * (m : ℝ) / (q : ℝ)) * (q : ℝ)) / 2 := by
-              simp [div_eq_mul_inv, mul_assoc]
-        _ = (ℓ : ℝ) ^ 2 * (m : ℝ) / 2 := by
-              simp [div_eq_mul_inv, hq_ne, mul_assoc]
+      have :
+          ((ℓ : ℝ) ^ 2 * (m : ℝ) / (q : ℝ)) * ((q : ℝ) / 2) =
+            (ℓ : ℝ) ^ 2 * (m : ℝ) / 2 := by
+        field_simp [hq_ne]
+      simpa [h_eqJ] using this
     have hmain :
         (Jreal - (ℓ : ℝ) / 2) *
             ((q : ℝ) - (m : ℝ) - (ℓ : ℝ)) >
