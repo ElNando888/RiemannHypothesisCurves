@@ -538,13 +538,7 @@ by
 
 noncomputable def polyMulRightLinear (F : Type*) [Field F] (g : Polynomial F) :
     Polynomial F →ₗ[F] Polynomial F :=
-{ toFun := fun p => p * g
-  map_add' := by
-    intro p q
-    simp [add_mul]
-  map_smul' := by
-    intro a p
-    simp }
+  LinearMap.mulRight F g
 
 noncomputable def polyDivRightLinear (F : Type*) [Field F] {g : Polynomial F} (hg : g ≠ 0) :
     (LinearMap.range (polyMulRightLinear (F:=F) g)) →ₗ[F] Polynomial F :=
