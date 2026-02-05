@@ -257,44 +257,31 @@ by
   -- some simple arithmetic bounds
   have hℓ_nonneg : (0 : ℝ) ≤ (ℓ : ℝ) := by exact_mod_cast (Nat.zero_le ℓ)
   have hm_pos : 0 < m := lt_of_lt_of_le (by decide : (0 : ℕ) < 2) hm_ge_two
-  have hm1_nonneg : 0 ≤ (m : ℝ) - 1 := by
-    have hm1 : (1 : ℝ) ≤ (m : ℝ) := by
-      exact_mod_cast (le_trans (show (1 : ℕ) ≤ 2 by decide) hm_ge_two)
-    linarith
+  have hm1_nonneg : 0 ≤ (m : ℝ) - 1 :=
+    sub_nonneg.mpr (by
+      exact_mod_cast (le_trans (show (1 : ℕ) ≤ 2 by decide) hm_ge_two))
   have hB_lt_Bmax_J :
       (B : ℝ) <
         (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2) +
           (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2 :=
     by
       refine lt_of_lt_of_le hB_real_small ?_
-      have hcoef_div_le :
+      have hℓ' : (ℓ : ℝ) - 1 ≤ (ℓ : ℝ) := by linarith
+      have hmul :
+          ((ℓ : ℝ) - 1) * ((m : ℝ) - 1) ≤ (ℓ : ℝ) * ((m : ℝ) - 1) :=
+        mul_le_mul_of_nonneg_right hℓ' hm1_nonneg
+      have hdiv :
           (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 ≤
-            (ℓ : ℝ) * ((m : ℝ) - 1) / 2 := by
-        have hℓ' : (ℓ : ℝ) - 1 ≤ (ℓ : ℝ) := by linarith
-        have hmul :
-            ((ℓ : ℝ) - 1) * ((m : ℝ) - 1) ≤
-              (ℓ : ℝ) * ((m : ℝ) - 1) :=
-          mul_le_mul_of_nonneg_right hℓ' hm1_nonneg
-        nlinarith [hmul]
-      have hterm_mul_le :
+            (ℓ : ℝ) * ((m : ℝ) - 1) / 2 :=
+        div_le_div_of_nonneg_right hmul (by norm_num : (0 : ℝ) ≤ 2)
+      have hterm :
           (ℓ : ℝ) * ((((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) ≤
             (ℓ : ℝ) * ((ℓ : ℝ) * ((m : ℝ) - 1) / 2) :=
-        mul_le_mul_of_nonneg_left hcoef_div_le hℓ_nonneg
-      calc
-        (ℓ : ℝ) *
-              ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2 +
-                (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2)
-            =
-            (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2) +
-              (ℓ : ℝ) * ((((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) := by
-            ring
-        _ ≤ (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2) +
-              (ℓ : ℝ) * ((ℓ : ℝ) * ((m : ℝ) - 1) / 2) := by
-            exact add_le_add_left hterm_mul_le _
-        _ =
-            (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2) +
-              (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2 := by
-            simp [pow_two, mul_assoc, div_eq_mul_inv]
+        mul_le_mul_of_nonneg_left hdiv hℓ_nonneg
+      have hsum :=
+        add_le_add_left hterm ((ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2))
+      simpa [mul_add, add_assoc, pow_two, mul_assoc, mul_left_comm, mul_comm, div_eq_mul_inv] using
+        hsum
   -- switch to a more convenient notation over ℝ
   set Jreal : ℝ :=
       (ℓ : ℝ) / 2 + ((ℓ : ℝ) ^ 2 * (m : ℝ)) / (q : ℝ) with hJreal_def
