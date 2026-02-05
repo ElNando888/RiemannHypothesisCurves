@@ -83,10 +83,7 @@ by
     exact_mod_cast hB_nat
   have hx_pos : (0 : ℚ) < ((q : ℚ) - m) / 2 := by
     have hm_lt_q : m < q := by
-      have hm_le_6m : m ≤ 6 * m := by
-        simpa [Nat.one_mul, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
-          Nat.mul_le_mul_right m (show (1 : ℕ) ≤ 6 from by decide)
-      exact lt_of_le_of_lt hm_le_6m hq6m
+      exact lt_of_le_of_lt (Nat.le_mul_of_pos_left m (by decide : 0 < 6)) hq6m
     have : (m : ℚ) < (q : ℚ) := by exact_mod_cast hm_lt_q
     exact div_pos (sub_pos.mpr this) (by norm_num)
   have hd_lt_rat : (d : ℚ) < ((q : ℚ) - m) / 2 :=
@@ -526,11 +523,7 @@ by
   have hceil_nat : 1 ≤ Nat.ceil (((q : ℚ) - m) / 2) := by
     refine Nat.one_le_ceil_iff.mpr ?_
     have hm_lt_q : m < q :=
-      lt_of_le_of_lt
-        (by
-          simpa [Nat.one_mul] using
-            Nat.mul_le_mul_right m (show (1 : ℕ) ≤ 6 by decide))
-        (by simpa using hq6m)
+      lt_of_le_of_lt (Nat.le_mul_of_pos_left m (by decide : 0 < 6)) (by simpa using hq6m)
     have : (0 : ℚ) < (q : ℚ) - m :=
       sub_pos.mpr (by exact_mod_cast hm_lt_q)
     simpa using div_pos this (show (0 : ℚ) < (2 : ℚ) by norm_num)
