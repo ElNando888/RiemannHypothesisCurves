@@ -13,18 +13,19 @@ lemma stepanov_sigma_degree_bound_fin
 by
   apply Polynomial.natDegree_sum_le_of_forall_le
   intro j _
-  have hmul :=
-    Polynomial.natDegree_mul_le
-      (p := rjk j + Polynomial.C a * sjk j) (q := Polynomial.X ^ (j : ℕ))
   have h_sum : (rjk j + Polynomial.C a * sjk j).natDegree ≤ d + k * (m - 1) := by
-    have :=
+    simpa [hdeg_s j] using
       (Polynomial.natDegree_add_le (rjk j) (Polynomial.C a * sjk j)).trans
         (max_le_max (hdeg_r j) (Polynomial.natDegree_C_mul_le a _))
-    simpa [hdeg_s j] using this
+  have hmul :
+      ((rjk j + Polynomial.C a * sjk j) * Polynomial.X ^ (j : ℕ)).natDegree ≤
+        (rjk j + Polynomial.C a * sjk j).natDegree + (j : ℕ) := by
+    simpa [Polynomial.natDegree_X_pow] using
+      (Polynomial.natDegree_mul_le
+        (p := rjk j + Polynomial.C a * sjk j) (q := (Polynomial.X : Polynomial F) ^ (j : ℕ)))
   calc
     ((rjk j + Polynomial.C a * sjk j) * Polynomial.X ^ (j : ℕ)).natDegree
-        ≤ (rjk j + Polynomial.C a * sjk j).natDegree + (j : ℕ) := by
-          simpa [Polynomial.natDegree_X_pow] using hmul
+        ≤ (rjk j + Polynomial.C a * sjk j).natDegree + (j : ℕ) := hmul
     _ ≤ d + k * (m - 1) + (j : ℕ) :=
       Nat.add_le_add_right h_sum _
     _ ≤ J - 1 + d + k * (m - 1) := by
