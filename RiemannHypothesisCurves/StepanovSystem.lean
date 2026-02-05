@@ -490,19 +490,11 @@ lemma exists_nonzero_solution_of_finrank_lt
     (h : Module.finrank F W < Module.finrank F V) :
     ∃ v : V, v ≠ 0 ∧ L v = 0 :=
 by
+  classical
   obtain ⟨v, hv_mem, hv_ne⟩ :=
     Submodule.exists_mem_ne_zero_of_ne_bot
       (p := LinearMap.ker L)
-      (by
-        intro hker
-        have hk0 : Module.finrank F (LinearMap.ker L) = 0 := by
-          simp [hker]
-        exact
-          (ne_of_lt
-            (lt_of_le_of_lt (Submodule.finrank_le (s := LinearMap.range L)) h))
-            (by
-              simpa [hk0] using
-                LinearMap.finrank_range_add_finrank_ker (f := L)))
+      (LinearMap.ker_ne_bot_of_finrank_lt (f := L) h)
   refine ⟨v, hv_ne, ?_⟩
   simpa using hv_mem
 
