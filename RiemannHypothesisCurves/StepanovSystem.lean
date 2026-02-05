@@ -237,28 +237,18 @@ by
   have hq6m_nat : 6 * m < q := by simpa [Nat.mul_comm] using hq6m
   have hq_pos_nat : 0 < q := lt_of_le_of_lt (Nat.zero_le (6 * m)) hq6m_nat
   have hm_lt_q : m < q :=
-    lt_of_le_of_lt
-      (by
-        have h16 : (1 : ℕ) ≤ 6 := by decide
-        have := Nat.mul_le_mul_right m h16
-        simpa [Nat.one_mul, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using this)
-      hq6m_nat
+    lt_of_le_of_lt (Nat.le_mul_of_pos_left m (by decide : 0 < 6)) hq6m_nat
   -- positivity of the expression defining J
   have hJ_expr_pos :
       0 < ((ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ)) := by
     have hℓ_posℚ : (0 : ℚ) < (ℓ : ℚ) := by exact_mod_cast hℓ_pos
-    have h_half_pos : (0 : ℚ) < (ℓ : ℚ) / 2 :=
-      div_pos hℓ_posℚ (by norm_num : (0 : ℚ) < 2)
+    have h_half_pos : (0 : ℚ) < (ℓ : ℚ) / 2 := div_pos hℓ_posℚ (by norm_num)
     have hq_posℚ : (0 : ℚ) < (q : ℚ) := by exact_mod_cast hq_pos_nat
-    have h_div_nonneg :
-        (0 : ℚ) ≤ ((ℓ : ℚ) ^ 2 * (m : ℚ)) / (q : ℚ) :=
+    have h_div_nonneg : (0 : ℚ) ≤ ((ℓ : ℚ) ^ 2 * (m : ℚ)) / (q : ℚ) :=
       div_nonneg
         (mul_nonneg (pow_two_nonneg _) (by exact_mod_cast (Nat.zero_le m)))
         (le_of_lt hq_posℚ)
-    have h_add :
-        (0 : ℚ) < (ℓ : ℚ) / 2 + ((ℓ : ℚ) ^ 2 * (m : ℚ)) / (q : ℚ) :=
-      add_pos_of_pos_of_nonneg h_half_pos h_div_nonneg
-    simpa [add_comm] using h_add
+    exact add_pos_of_pos_of_nonneg h_half_pos h_div_nonneg
   have hJ_pos : 1 ≤ J :=
     (Nat.one_le_ceil_iff
       (a := ((ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ)))).2
@@ -275,8 +265,8 @@ by
   have hm_pos : 0 < m := lt_of_lt_of_le (by decide : (0 : ℕ) < 2) hm_ge_two
   have hm1_nonneg : 0 ≤ (m : ℝ) - 1 := by
     have hm1 : (1 : ℝ) ≤ (m : ℝ) := by
-      exact_mod_cast (Nat.succ_le_of_lt hm_pos)
-    exact sub_nonneg.mpr hm1
+      exact_mod_cast (le_trans (show (1 : ℕ) ≤ 2 by decide) hm_ge_two)
+    linarith
   -- compare the quadratic term in ℓ with a simpler upper bound
   have hcoef_le :
       ((ℓ : ℝ) - 1) * ((m : ℝ) - 1) ≤ (ℓ : ℝ) * ((m : ℝ) - 1) := by
