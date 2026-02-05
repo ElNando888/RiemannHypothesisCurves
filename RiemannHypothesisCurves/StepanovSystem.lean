@@ -307,39 +307,23 @@ by
       (ℓ : ℝ) * (Jreal + xR) + C with hBmax_def
   -- lower bound on A_real
   have hA_ge : Jreal * ((q : ℝ) - (m : ℝ)) ≤ A_real := by
-    have hx_le_ceil : xR ≤ (Int.ceil xR : ℝ) := Int.le_ceil xR
     have hJreal_nonneg : (0 : ℝ) ≤ Jreal := by
-      have h1 : (0 : ℝ) ≤ (ℓ : ℝ) / 2 :=
-        div_nonneg hℓ_nonneg (show (0 : ℝ) ≤ (2 : ℝ) by norm_num)
-      have h2 :
-          (0 : ℝ) ≤ ((ℓ : ℝ) ^ 2 * (m : ℝ)) / (q : ℝ) := by
-        have hnum : (0 : ℝ) ≤ (ℓ : ℝ) ^ 2 * (m : ℝ) :=
-          mul_nonneg (pow_two_nonneg _) (by exact_mod_cast (Nat.zero_le m))
-        have hq_pos : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq_pos_nat
-        exact div_nonneg hnum (le_of_lt hq_pos)
-      have := add_nonneg h1 h2
+      have :
+          (0 : ℝ) ≤ (ℓ : ℝ) / 2 + ((ℓ : ℝ) ^ 2 * (m : ℝ)) / (q : ℝ) := by
+        positivity
       simpa [Jreal, hJreal_def] using this
-    have h2J_nonneg : (0 : ℝ) ≤ 2 * Jreal :=
-      mul_nonneg (by norm_num) hJreal_nonneg
     have hmul :
-        (2 * Jreal) * xR ≤
-          (2 * Jreal) * (Int.ceil xR : ℝ) :=
-      mul_le_mul_of_nonneg_left hx_le_ceil h2J_nonneg
+        (2 * Jreal) * xR ≤ (2 * Jreal) * (Int.ceil xR : ℝ) :=
+      mul_le_mul_of_nonneg_left (Int.le_ceil xR) (mul_nonneg (by norm_num) hJreal_nonneg)
     have hx_two : (2 : ℝ) * xR = (q : ℝ) - (m : ℝ) := by
-      have : xR + xR = (q : ℝ) - (m : ℝ) := by
-        simp [xR, add_halves]
-      simpa [two_mul] using this
-    have hA_left :
-        (2 * Jreal) * xR = Jreal * ((q : ℝ) - (m : ℝ)) := by
+      simp [xR, two_mul, add_halves]
+    have hleft : (2 * Jreal) * xR = Jreal * ((q : ℝ) - (m : ℝ)) := by
       calc
-        (2 * Jreal) * xR = Jreal * (2 * xR) := by ac_rfl
+        (2 * Jreal) * xR = Jreal * (2 * xR) := by ring
         _ = Jreal * ((q : ℝ) - (m : ℝ)) := by simp [hx_two]
-    have hA_eq :
-        (2 * Jreal) * (Int.ceil xR : ℝ) = A_real := by
+    have hright : (2 * Jreal) * (Int.ceil xR : ℝ) = A_real := by
       simp [A_real, hAreal_def, D]
-    have hA_aux : (2 * Jreal) * xR ≤ A_real := by
-      simpa [hA_eq] using hmul
-    simpa [hA_left] using hA_aux
+    simpa [hleft, hright] using hmul
   -- key inequality Jreal*(q-m) > Bmax_real
   have hJ_gt_Bmax : Bmax_real < Jreal * ((q : ℝ) - (m : ℝ)) := by
     -- first rewrite the difference in a more symmetric way
