@@ -690,10 +690,8 @@ by
     ⟨j, lt_of_lt_of_le j.isLt (Nat.le_mul_of_pos_left _ (by decide : 0 < 2))⟩
   let finRight : Fin J → Fin (2 * J) := fun j =>
     ⟨J + j, by simp [two_mul, add_comm]⟩
-  let piProj : Fin (2 * J) → V →ₗ[F] Polynomial.degreeLT F (d + 1) := fun i =>
-    { toFun := fun v => v i
-      map_add' := by intro v w; rfl
-      map_smul' := by intro a v; rfl }
+  let piProj : Fin (2 * J) → V →ₗ[F] Polynomial.degreeLT F (d + 1) :=
+    fun i => LinearMap.proj i
   let rjMap : Fin J → V →ₗ[F] Polynomial F := fun j =>
     (Polynomial.degreeLT F (d + 1)).subtype.comp (piProj (finLeft j))
   let sjMap : Fin J → V →ₗ[F] Polynomial F := fun j =>
