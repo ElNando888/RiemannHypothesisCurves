@@ -367,38 +367,18 @@ by
           (Jreal - (ℓ : ℝ) / 2) *
               ((q : ℝ) - (m : ℝ) - (ℓ : ℝ)) -
             (ℓ : ℝ) ^ 2 * (m : ℝ) / 2 := by
-      have :
-          Jreal * ((q : ℝ) - (m : ℝ)) -
-              ((ℓ : ℝ) * (Jreal + xR) +
-                (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2) =
-            (Jreal - (ℓ : ℝ) / 2) *
-                ((q : ℝ) - (m : ℝ) - (ℓ : ℝ)) -
-              (ℓ : ℝ) ^ 2 * (m : ℝ) / 2 := by
-        have :
-            Jreal * ((q : ℝ) - (m : ℝ)) -
-                ((ℓ : ℝ) *
-                    (Jreal + ((q : ℝ) - (m : ℝ)) / 2) +
-                      (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2) =
-              (Jreal - (ℓ : ℝ) / 2) *
-                  ((q : ℝ) - (m : ℝ) - (ℓ : ℝ)) -
-                (ℓ : ℝ) ^ 2 * (m : ℝ) / 2 := by
-          ring_nf
-        simpa [xR, hxR_def] using this
-      simpa [Bmax_real, hBmax_def] using this
+      simp [Bmax_real, hxR_def, hC_def]
+      ring_nf
     have h_eqJ :
         Jreal - (ℓ : ℝ) / 2 =
           (ℓ : ℝ) ^ 2 * (m : ℝ) / (q : ℝ) := by
       simp [Jreal, sub_eq_add_neg, add_comm, add_assoc]
     have hJ_minus_pos : 0 < Jreal - (ℓ : ℝ) / 2 := by
-      have hℓ_sq_pos : 0 < (ℓ : ℝ) ^ 2 := by
-        have hℓ_pos' : 0 < (ℓ : ℝ) := by exact_mod_cast hℓ_pos
-        have := pow_pos hℓ_pos' (2 : ℕ)
-        simpa [pow_two] using this
-      have hpos_num : 0 < (ℓ : ℝ) ^ 2 * (m : ℝ) :=
-        mul_pos hℓ_sq_pos (by exact_mod_cast hm_pos)
-      have hq_pos : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq_pos_nat
-      have : 0 < (ℓ : ℝ) ^ 2 * (m : ℝ) / (q : ℝ) :=
-        div_pos hpos_num hq_pos
+      have hℓ_posR : 0 < (ℓ : ℝ) := by exact_mod_cast hℓ_pos
+      have hm_posR : 0 < (m : ℝ) := by exact_mod_cast hm_pos
+      have hq_posR : 0 < (q : ℝ) := by exact_mod_cast hq_pos_nat
+      have : 0 < (ℓ : ℝ) ^ 2 * (m : ℝ) / (q : ℝ) := by
+        positivity
       simpa [h_eqJ] using this
     -- obtain that q/2 < q − m − ℓ
     have hq6m_real : (6 : ℝ) * (m : ℝ) < (q : ℝ) := by exact_mod_cast hq6m_nat
