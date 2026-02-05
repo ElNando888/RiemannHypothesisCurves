@@ -240,13 +240,9 @@ by
   have hJ_expr_pos :
       0 < ((ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ)) := by
     have hℓ_posℚ : (0 : ℚ) < (ℓ : ℚ) := by exact_mod_cast hℓ_pos
-    have h_half_pos : (0 : ℚ) < (ℓ : ℚ) / 2 := div_pos hℓ_posℚ (by norm_num)
     have hq_posℚ : (0 : ℚ) < (q : ℚ) := by exact_mod_cast hq_pos_nat
-    have h_div_nonneg : (0 : ℚ) ≤ ((ℓ : ℚ) ^ 2 * (m : ℚ)) / (q : ℚ) :=
-      div_nonneg
-        (mul_nonneg (pow_two_nonneg _) (by exact_mod_cast (Nat.zero_le m)))
-        (le_of_lt hq_posℚ)
-    exact add_pos_of_pos_of_nonneg h_half_pos h_div_nonneg
+    have hm_nonnegℚ : (0 : ℚ) ≤ (m : ℚ) := by exact_mod_cast (Nat.zero_le m)
+    positivity
   have hJ_pos : 1 ≤ J :=
     (Nat.one_le_ceil_iff
       (a := ((ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ)))).2
