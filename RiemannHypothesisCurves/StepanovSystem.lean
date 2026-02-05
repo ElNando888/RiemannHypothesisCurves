@@ -45,29 +45,27 @@ lemma stepanov_system_constraint_count
       (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2 +
         (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) :=
 by
+  have h2 : 2 ∣ ℓ * (ℓ - 1) := (Nat.even_mul_pred_self ℓ).two_dvd
+  have h2' : 2 ∣ ℓ * (ℓ - 1) * (m - 1) := dvd_mul_of_dvd_left h2 (m - 1)
+  have h_mul_div :
+      (ℓ * (ℓ - 1) / 2) * (m - 1) = ℓ * (ℓ - 1) * (m - 1) / 2 := by
+    simpa [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using
+      (Nat.mul_div_right_comm h2 (m - 1)).symm
+
   have h_sum :
       ∑ k ∈ Finset.range ℓ, (J + d + k * (m - 1)) =
         ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 := by
-    have h_mul_div :
-        (ℓ * (ℓ - 1) / 2) * (m - 1) =
-          ℓ * (ℓ - 1) * (m - 1) / 2 := by
-      have h2 : 2 ∣ ℓ * (ℓ - 1) := (Nat.even_mul_pred_self ℓ).two_dvd
-      simpa [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using
-        (Nat.mul_div_right_comm h2 (m - 1)).symm
     have h_lin :
-        ∑ k ∈ Finset.range ℓ, k * (m - 1) =
-          (∑ k ∈ Finset.range ℓ, k) * (m - 1) := by
+        ∑ k ∈ Finset.range ℓ, k * (m - 1) = (∑ k ∈ Finset.range ℓ, k) * (m - 1) := by
       simpa [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using
-        (Finset.sum_mul (s := Finset.range ℓ)
-          (f := fun k : ℕ => k) (a := m - 1)).symm
+        (Finset.sum_mul (s := Finset.range ℓ) (f := fun k : ℕ => k) (a := m - 1)).symm
     calc
       ∑ k ∈ Finset.range ℓ, (J + d + k * (m - 1)) =
           ∑ k ∈ Finset.range ℓ, ((J + d) + k * (m - 1)) := by
             refine Finset.sum_congr rfl ?_
             intro k hk
             simp [add_assoc]
-      _ = (∑ k ∈ Finset.range ℓ, (J + d)) +
-            ∑ k ∈ Finset.range ℓ, k * (m - 1) := by
+      _ = (∑ k ∈ Finset.range ℓ, (J + d)) + ∑ k ∈ Finset.range ℓ, k * (m - 1) := by
             simp [Finset.sum_add_distrib]
       _ = ℓ * (J + d) + (∑ k ∈ Finset.range ℓ, k) * (m - 1) := by
             simp [Finset.sum_const, Finset.card_range, h_lin]
@@ -75,93 +73,78 @@ by
             simp [Finset.sum_range_id]
       _ = ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 := by
             simp [Nat.mul_add, Nat.add_assoc, h_mul_div]
-  have hB_nat :
-      B ≤ ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 := by
+
+  have hB_nat : B ≤ ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 := by
     simpa [h_sum] using hB
+
+  refine ⟨hB_nat, ?_⟩
+
   have hB_real_le :
       (B : ℝ) ≤
         ((ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) := by
     exact_mod_cast hB_nat
+
   have hx_pos : (0 : ℚ) < ((q : ℚ) - m) / 2 := by
-    have hm_lt_q : m < q := by
-      exact lt_of_le_of_lt (Nat.le_mul_of_pos_left m (by decide : 0 < 6)) hq6m
+    have hm_lt_q : m < q :=
+      lt_of_le_of_lt (Nat.le_mul_of_pos_left m (by decide : 0 < 6)) hq6m
     have : (m : ℚ) < (q : ℚ) := by exact_mod_cast hm_lt_q
     exact div_pos (sub_pos.mpr this) (by norm_num)
-  have hd_lt_rat : (d : ℚ) < ((q : ℚ) - m) / 2 :=
-    Nat.lt_ceil.mp <| Nat.lt_of_le_pred (Nat.ceil_pos.mpr hx_pos) (by simp [hd])
+
   have hd_lt_real : (d : ℝ) < ((q : ℝ) - (m : ℝ)) / 2 := by
+    have hd_lt_rat : (d : ℚ) < ((q : ℚ) - m) / 2 :=
+      Nat.lt_ceil.mp <| Nat.lt_of_le_pred (Nat.ceil_pos.mpr hx_pos) (by simp [hd])
     exact_mod_cast hd_lt_rat
-  have hEd_lt :
-      (ℓ : ℝ) * (d : ℝ) <
-        (ℓ : ℝ) * (((q : ℝ) - (m : ℝ)) / 2) :=
-    mul_lt_mul_of_pos_left hd_lt_real (by exact_mod_cast hℓ_pos)
+
+  have hℓ_ge1 : 1 ≤ ℓ := Nat.succ_le_of_lt hℓ_pos
+  have hm_ge1 : 1 ≤ m := le_trans (show (1 : ℕ) ≤ 2 by decide) hm_ge_two
+  have hℓ_sub : ((ℓ - 1 : ℕ) : ℝ) = (ℓ : ℝ) - 1 := by
+    simpa using (Nat.cast_sub (R := ℝ) hℓ_ge1)
+  have hm_sub : ((m - 1 : ℕ) : ℝ) = (m : ℝ) - 1 := by
+    simpa using (Nat.cast_sub (R := ℝ) hm_ge1)
+
+  have h_cast_div :
+      ((ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) =
+        (ℓ : ℝ) * ((ℓ - 1 : ℕ) : ℝ) * ((m - 1 : ℕ) : ℝ) / 2 := by
+    simpa [Nat.cast_mul, mul_assoc, mul_left_comm, mul_comm] using
+      (Nat.cast_div (K := ℝ) (m := ℓ * (ℓ - 1) * (m - 1)) (n := 2) h2' (by norm_num))
+
+  have hterm :
+      ((ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) =
+        (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 := by
+    refine h_cast_div.trans ?_
+    simp [hℓ_sub, hm_sub, mul_assoc]
+
   have hS_cast :
       ((ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) =
         (ℓ : ℝ) * (J : ℝ) + (ℓ : ℝ) * (d : ℝ) +
-          ((ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) := by
-    simp [Nat.cast_add, Nat.cast_mul, add_assoc]
-  have h_div_le :
-      ((ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) ≤
-        ((ℓ : ℝ) * ((ℓ - 1 : ℕ) : ℝ) * ((m - 1 : ℕ) : ℝ)) / 2 := by
-    simpa [Nat.cast_mul, mul_assoc, div_eq_mul_inv] using
-      (Nat.cast_div_le (α := ℝ)
-        (m := ℓ * (ℓ - 1) * (m - 1)) (n := 2))
-  have hℓ_sub : ((ℓ - 1 : ℕ) : ℝ) = (ℓ : ℝ) - 1 := by
-    have hℓ_ge1 : 1 ≤ ℓ := Nat.succ_le_of_lt hℓ_pos
-    simpa using (Nat.cast_sub (R := ℝ) hℓ_ge1)
-  have hm_sub : ((m - 1 : ℕ) : ℝ) = (m : ℝ) - 1 := by
-    have hm_ge1 : 1 ≤ m :=
-      le_trans (show (1 : ℕ) ≤ 2 by decide) hm_ge_two
-    simpa using (Nat.cast_sub (R := ℝ) hm_ge1)
-  have hCf_eq :
-      ((ℓ : ℝ) * ((ℓ - 1 : ℕ) : ℝ) * ((m - 1 : ℕ) : ℝ)) / 2 =
-        (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 := by
-    simp [hℓ_sub, hm_sub, mul_assoc]
-  have hS_le_target1 :
-      ((ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) ≤
-        (ℓ : ℝ) * (J : ℝ) + (ℓ : ℝ) * (d : ℝ) +
           (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 := by
-    have h' :=
-      add_le_add_left
-        (add_le_add_left h_div_le ((ℓ : ℝ) * (d : ℝ)))
-        ((ℓ : ℝ) * (J : ℝ))
-    simpa [hS_cast, hCf_eq, add_assoc, add_comm, add_left_comm] using h'
-  have hAEC_lt :
-      (ℓ : ℝ) * (J : ℝ) + (ℓ : ℝ) * (d : ℝ) +
-          (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 <
-        (ℓ : ℝ) * (J : ℝ) +
-          (ℓ : ℝ) * (((q : ℝ) - (m : ℝ)) / 2) +
-          (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 := by
-    exact
-      add_lt_add_right
-        (add_lt_add_left hEd_lt ((ℓ : ℝ) * (J : ℝ))) _
-  have hS_lt_target :
+    simp [Nat.cast_add, Nat.cast_mul, add_assoc, hterm]
+
+  have hℓ_pos_real : (0 : ℝ) < (ℓ : ℝ) := by exact_mod_cast hℓ_pos
+  have hEd_lt :
+      (ℓ : ℝ) * (d : ℝ) < (ℓ : ℝ) * (((q : ℝ) - (m : ℝ)) / 2) :=
+    mul_lt_mul_of_pos_left hd_lt_real hℓ_pos_real
+
+  have h_sum_lt :
       ((ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) <
-        (ℓ : ℝ) *
-          ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2 +
-            (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) := by
+        (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2 +
+          (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) := by
     have h' :
-        ((ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) <
-          (ℓ : ℝ) * (J : ℝ) +
-            (ℓ : ℝ) * (((q : ℝ) - (m : ℝ)) / 2) +
+        (ℓ : ℝ) * (J : ℝ) + (ℓ : ℝ) * (d : ℝ) +
+            (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 <
+          (ℓ : ℝ) * (J : ℝ) + (ℓ : ℝ) * (((q : ℝ) - (m : ℝ)) / 2) +
             (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 :=
-      lt_of_le_of_lt hS_le_target1 hAEC_lt
+      by
+        exact add_lt_add_right (add_lt_add_left hEd_lt _) _
     have h_target_eq :
-        (ℓ : ℝ) * (J : ℝ) +
-            (ℓ : ℝ) * (((q : ℝ) - (m : ℝ)) / 2) +
+        (ℓ : ℝ) * (J : ℝ) + (ℓ : ℝ) * (((q : ℝ) - (m : ℝ)) / 2) +
             (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 =
-          (ℓ : ℝ) *
-            ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2 +
-              (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) := by
+          (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2 +
+            (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) := by
       ring
-    simpa [h_target_eq] using h'
-  have hB_lt :
-      (B : ℝ) <
-        (ℓ : ℝ) *
-          ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2 +
-            (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) :=
-    lt_of_le_of_lt hB_real_le hS_lt_target
-  exact ⟨hB_nat, hB_lt⟩
+    simpa [hS_cast, h_target_eq] using h'
+
+  exact lt_of_le_of_lt hB_real_le h_sum_lt
 
 lemma stepanov_monotone_in_J
     {J₁ J₂ D ℓ x C : ℝ}
@@ -453,24 +436,20 @@ lemma exists_nonzero_solution_of_finrank_lt
     ∃ v : V, v ≠ 0 ∧ L v = 0 :=
 by
   classical
-  obtain ⟨v, hv_mem, hv_ne⟩ :=
-    Submodule.exists_mem_ne_zero_of_ne_bot
-      (p := LinearMap.ker L)
-      (LinearMap.ker_ne_bot_of_finrank_lt (f := L) h)
-  refine ⟨v, hv_ne, ?_⟩
-  simpa using hv_mem
+  rcases
+      Submodule.exists_mem_ne_zero_of_ne_bot
+        (p := LinearMap.ker L)
+        (LinearMap.ker_ne_bot_of_finrank_lt (f := L) h) with
+    ⟨v, hv, hv0⟩
+  exact ⟨v, hv0, by simpa using hv⟩
 
 lemma natDegree_le_of_mem_degreeLT_succ
     (F : Type*) [Semiring F] (d : ℕ) (p : Polynomial.degreeLT F (d + 1)) :
     (p : Polynomial F).natDegree ≤ d :=
 by
-  have h := p.2
-  simp only [Polynomial.mem_degreeLT] at h
-  refine Nat.lt_succ_iff.mp ?_
-  by_cases hp : (p : Polynomial F) = 0
-  · simp [hp]
-  · rw [Polynomial.degree_eq_natDegree hp] at h
-    exact WithBot.coe_lt_coe.mp h
+  have hp : (p : Polynomial F) ∈ Polynomial.degreeLE F d := by
+    simpa [Polynomial.degreeLT_succ_eq_degreeLE] using p.2
+  exact Polynomial.natDegree_le_of_degree_le (Polynomial.mem_degreeLE.mp hp)
 
 lemma stepanov_dimension_inequality_ceil
     (F : Type*) [Field F]

@@ -314,57 +314,49 @@ lemma hasseDerivOp_prod_single_polynomial_dvd
       (Finset.univ : Finset (Fin r)).prod
         (fun i => hasseDerivOp F (j i).val g) :=
 by
+  classical
   let s : Finset (Fin r) := Finset.univ
   let Z : Finset (Fin r) := s.filter fun i => (j i).val = 0
   let NZ : Finset (Fin r) := s.filter fun i => (j i).val ≠ 0
-  have hprod_split :
-      Z.prod (fun i => hasseDerivOp F (j i).val g) *
-        NZ.prod (fun i => hasseDerivOp F (j i).val g) =
-      s.prod (fun i => hasseDerivOp F (j i).val g) :=
-    Finset.prod_filter_mul_prod_filter_not
-      (s := s)
-      (p := fun i : Fin r => (j i).val = 0)
-      (f := fun i => hasseDerivOp F (j i).val g)
-  have hsum_decomp :
-      Z.sum (fun i => (j i).val) + NZ.sum (fun i => (j i).val) =
-        s.sum (fun i => (j i).val) :=
-    Finset.sum_filter_add_sum_filter_not
-      (s := s)
-      (p := fun i : Fin r => (j i).val = 0)
-      (f := fun i => (j i).val)
-  have hZsum_zero :
-      Z.sum (fun i => (j i).val) = 0 := by
+  have hZsum : Z.sum (fun i => (j i).val) = 0 := by
     refine Finset.sum_eq_zero ?_
     intro i hi
-    simpa using (Finset.mem_filter.1 hi).2
-  have hsum_NZ :
-      NZ.sum (fun i => (j i).val) = k := by
-    simpa [hZsum_zero] using hsum_decomp.trans h_sum
-  have h_le_Zcard : r - k ≤ Z.card := by
-    have hNZ_card_le_sum :
-        NZ.card ≤ NZ.sum (fun i => (j i).val) := by
-      have hones :
-          NZ.card = NZ.sum (fun _ : Fin r => (1 : ℕ)) :=
-        Finset.card_eq_sum_ones (s := NZ)
-      have hterm :
-          NZ.sum (fun _ : Fin r => (1 : ℕ)) ≤
-            NZ.sum (fun i => (j i).val) := by
-        refine Finset.sum_le_sum ?_
-        intro i hi
-        obtain ⟨_, hne⟩ := Finset.mem_filter.1 hi
-        exact Nat.succ_le_of_lt (Nat.pos_of_ne_zero hne)
-      rwa [hones.symm] at hterm
-    have hNZ_card_le_k : NZ.card ≤ k := by
-      simpa [hsum_NZ] using hNZ_card_le_sum
-    have h_r_eq : r = Z.card + NZ.card := by
-      have hcard_Z_NZ :
-          Z.card + NZ.card = s.card :=
-        Finset.filter_card_add_filter_neg_card_eq_card
-          (s := s)
-          (p := fun i : Fin r => (j i).val = 0)
-      simpa [s] using hcard_Z_NZ.symm
-    simpa [h_r_eq, Nat.add_comm] using
-      Nat.sub_le_sub_left hNZ_card_le_k r
+    simpa [Z] using (Finset.mem_filter.1 hi).2
+  have hsum_split :
+      Z.sum (fun i => (j i).val) + NZ.sum (fun i => (j i).val) =
+        s.sum (fun i => (j i).val) := by
+    simpa [Z, NZ] using
+      (Finset.sum_filter_add_sum_filter_not
+        (s := s) (p := fun i : Fin r => (j i).val = 0) (f := fun i => (j i).val))
+  have hNZsum : NZ.sum (fun i => (j i).val) = k := by
+    have hs : s.sum (fun i => (j i).val) = k := by simpa [s] using h_sum
+    have : Z.sum (fun i => (j i).val) + NZ.sum (fun i => (j i).val) = k := by
+      simpa [hs] using hsum_split
+    simpa [hZsum] using this
+  have hNZ_card_le_sum : NZ.card ≤ NZ.sum (fun i => (j i).val) := by
+    have hones_le :
+        (∑ _x ∈ NZ, (1 : ℕ)) ≤ ∑ x ∈ NZ, (j x).val := by
+      refine Finset.sum_le_sum ?_
+      intro i hi
+      have hne : (j i).val ≠ 0 := (Finset.mem_filter.1 hi).2
+      exact Nat.succ_le_of_lt (Nat.pos_of_ne_zero hne)
+    calc
+      NZ.card = ∑ _x ∈ NZ, (1 : ℕ) := (Finset.card_eq_sum_ones (s := NZ))
+      _ ≤ ∑ x ∈ NZ, (j x).val := hones_le
+  have hNZ_card_le_k : NZ.card ≤ k := by
+    simpa [hNZsum] using hNZ_card_le_sum
+  have hcard :
+      Z.card + NZ.card = s.card := by
+    simpa [Z, NZ] using
+      (Finset.filter_card_add_filter_neg_card_eq_card
+        (s := s) (p := fun i : Fin r => (j i).val = 0))
+  have hZ_card_ge : r - k ≤ Z.card := by
+    have hsum_le : Z.card + NZ.card ≤ Z.card + k :=
+      Nat.add_le_add_left hNZ_card_le_k _
+    have : (Z.card + NZ.card) - k ≤ (Z.card + k) - k :=
+      Nat.sub_le_sub_right hsum_le _
+    -- `s.card = r`
+    simpa [s, hcard, Nat.add_sub_cancel_left] using this
   have hZprod :
       Z.prod (fun i => hasseDerivOp F (j i).val g) = g ^ Z.card := by
     calc
@@ -372,16 +364,22 @@ by
           = Z.prod (fun _ : Fin r => g) := by
               refine Finset.prod_congr rfl ?_
               intro i hi
-              obtain ⟨_, hzero⟩ := Finset.mem_filter.1 hi
-              simp [hasseDerivOp, hzero]
-      _ = g ^ Z.card :=
-        Finset.prod_const (s := Z) (b := g)
-  have hdiv_Z :
-      g ^ (r - k) ∣ Z.prod (fun i => hasseDerivOp F (j i).val g) := by
-    simpa [hZprod] using pow_dvd_pow g h_le_Zcard
+              have : (j i).val = 0 := (Finset.mem_filter.1 hi).2
+              simp [hasseDerivOp, this]
+      _ = g ^ Z.card := by
+            simpa using (Finset.prod_const (s := Z) (b := g))
+  have hdiv_Z : g ^ (r - k) ∣ Z.prod (fun i => hasseDerivOp F (j i).val g) := by
+    simpa [hZprod] using pow_dvd_pow g hZ_card_ge
+  have hprod_split :
+      Z.prod (fun i => hasseDerivOp F (j i).val g) *
+        NZ.prod (fun i => hasseDerivOp F (j i).val g) =
+        s.prod (fun i => hasseDerivOp F (j i).val g) := by
+    simpa [Z, NZ] using
+      (Finset.prod_filter_mul_prod_filter_not
+        (s := s) (p := fun i : Fin r => (j i).val = 0)
+        (f := fun i => hasseDerivOp F (j i).val g))
   have :=
-    dvd_mul_of_dvd_left hdiv_Z
-      (NZ.prod fun i => hasseDerivOp F (j i).val g)
+    dvd_mul_of_dvd_left hdiv_Z (NZ.prod fun i => hasseDerivOp F (j i).val g)
   simpa [s, hprod_split] using this
 
 lemma hasseDerivOp_pow_dvd
@@ -447,145 +445,95 @@ by
           · subst hr0
             have hk0 : k = 0 := Nat.le_antisymm hk (Nat.zero_le _)
             subst hk0
-            have :
-                Polynomial.degree f ≤
-                  (match Polynomial.degree f with
-                   | ⊥ => (⊥ : WithBot ℕ)
-                   | some n => some (n - 0)) := by
-              cases hdeg : Polynomial.degree f with
-              | bot =>
-                  simp
-              | coe a =>
-                  have : ((↑a : WithBot ℕ)) ≤ some a := le_rfl
-                  simpa [hdeg] using this
-            simpa [hasseDerivOp] using this
+            cases hdeg : (Polynomial.degree f) with
+            | bot => simp [hdeg, hasseDerivOp]
+            | coe a =>
+                have : (↑a : WithBot ℕ) ≤ (some a : WithBot ℕ) := by
+                  exact le_rfl
+                simpa [hdeg, hasseDerivOp] using this
           · simp [hasseDerivOp, hr0]
         · -- Main case: `f ≠ 0` and `g ≠ 0`.
-          set num : Polynomial F := hasseDerivOp F k (f * g ^ r) with hnum
-          set den : Polynomial F := g ^ (r - k) with hden
+          classical
+          set num : Polynomial F := hasseDerivOp F k (f * g ^ r)
+          set den : Polynomial F := g ^ (r - k)
           have hdiv : den ∣ num := by
-            have hdiv' : g ^ (r - k) ∣ hasseDerivOp F k (f * g ^ r) :=
-              hasseDerivOp_mul_pow_dvd (F := F) (k := k) (r := r) f g
-            simpa [hnum, hden] using hdiv'
+            simpa [num, den] using
+              (hasseDerivOp_mul_pow_dvd (F := F) (k := k) (r := r) f g)
           have hden_ne : den ≠ 0 := by
-            have hg0 : g ≠ 0 := hg
-            simpa [hden] using pow_ne_zero (r - k) hg0
-          set q : Polynomial F := num / den with hq_def
-          have h_deg_q :
-              Polynomial.degree q ≤
-                (match
-                    Polynomial.degree f
-                      + (k : WithBot ℕ) * Polynomial.degree g with
-                 | ⊥ => (⊥ : WithBot ℕ)
-                 | some n => some (n - k)) := by
-            by_cases hq0 : q = 0
-            · simp [hq0]
-            · have hq_ne : q ≠ 0 := hq0
-              have hnum_nat_le1 :
+            simpa [den] using pow_ne_zero (r - k) hg
+          set q : Polynomial F := num / den
+          by_cases hq0 : q = 0
+          · simp [q, hq0]
+          · have hq_ne : q ≠ 0 := hq0
+            have hmul : den * q = num := by
+              simpa [q] using
+                (EuclideanDomain.mul_div_cancel'
+                  (R := Polynomial F) (a := num) (b := den) hden_ne hdiv)
+            have hnum_nat :
+                num.natDegree ≤ f.natDegree + r * g.natDegree - k := by
+              have h₁ :
                   num.natDegree ≤ (f * g ^ r).natDegree - k := by
-                simpa [hnum, hasseDerivOp] using
+                simpa [num, hasseDerivOp] using
                   (Polynomial.natDegree_hasseDeriv_le (p := f * g ^ r) (n := k))
-              have hmul_nat_le :
-                  (f * g ^ r).natDegree ≤
-                    f.natDegree + (g ^ r).natDegree :=
-                Polynomial.natDegree_mul_le (p := f) (q := g ^ r)
-              have hpow_nat_le :
-                  (g ^ r).natDegree ≤ r * g.natDegree :=
-                Polynomial.natDegree_pow_le (p := g) (n := r)
-              have hfg_nat_le :
-                  (f * g ^ r).natDegree ≤
-                    f.natDegree + r * g.natDegree :=
-                le_trans hmul_nat_le (Nat.add_le_add_left hpow_nat_le _)
-              have hnum_nat_le :
-                  num.natDegree ≤ f.natDegree + r * g.natDegree - k :=
-                le_trans hnum_nat_le1 (Nat.sub_le_sub_right hfg_nat_le _)
-              have hmul_eq : den * q = num := by
-                simpa [hq_def] using
-                  (EuclideanDomain.mul_div_cancel'
-                    (R := Polynomial F) (a := num) (b := den) hden_ne hdiv)
-              have hnum_nat_eq :
-                  num.natDegree = den.natDegree + q.natDegree := by
-                have := congrArg Polynomial.natDegree hmul_eq.symm
-                simpa [Polynomial.natDegree_mul (p := den) (q := q) hden_ne hq_ne] using this
-              have hden_nat : den.natDegree = (r - k) * g.natDegree := by
-                simp [hden]
-              have hsub_le :
-                  num.natDegree - (r - k) * g.natDegree ≤
-                    f.natDegree + r * g.natDegree - k
-                      - (r - k) * g.natDegree :=
-                Nat.sub_le_sub_right hnum_nat_le _
-              have hq_eq :
-                  num.natDegree - (r - k) * g.natDegree =
-                    q.natDegree := by
-                have : num.natDegree =
-                    (r - k) * g.natDegree + q.natDegree := by
-                  simpa [hden_nat, Nat.add_comm] using hnum_nat_eq
-                simp [this]
-              have hr : k + (r - k) = r := Nat.add_sub_of_le hk
+              have h₂ : (f * g ^ r).natDegree ≤ f.natDegree + r * g.natDegree := by
+                have hmul' :
+                    (f * g ^ r).natDegree ≤ f.natDegree + (g ^ r).natDegree :=
+                  Polynomial.natDegree_mul_le (p := f) (q := g ^ r)
+                have hpow' : (g ^ r).natDegree ≤ r * g.natDegree :=
+                  Polynomial.natDegree_pow_le (p := g) (n := r)
+                exact hmul'.trans (Nat.add_le_add_left hpow' _)
+              exact h₁.trans (Nat.sub_le_sub_right h₂ _)
+            have hnum_nat_eq : num.natDegree = den.natDegree + q.natDegree := by
+              have := congrArg Polynomial.natDegree hmul.symm
+              simpa [Polynomial.natDegree_mul (p := den) (q := q) hden_ne hq_ne] using this
+            have hden_nat : den.natDegree = (r - k) * g.natDegree := by
+              simp [den, hg]
+            have hq_nat :
+                q.natDegree = num.natDegree - den.natDegree := by
+              have : num.natDegree - den.natDegree = q.natDegree := by
+                simpa [hnum_nat_eq] using
+                  (Nat.add_sub_cancel_left den.natDegree q.natDegree)
+              exact this.symm
+            have hq_nat_le : q.natDegree ≤ f.natDegree + k * g.natDegree - k := by
+              have hsub :
+                  num.natDegree - den.natDegree ≤
+                    (f.natDegree + r * g.natDegree - k) - den.natDegree :=
+                Nat.sub_le_sub_right hnum_nat _
               have hr_mul :
                   r * g.natDegree =
                     k * g.natDegree + (r - k) * g.natDegree := by
                 calc
-                  r * g.natDegree
-                      = (k + (r - k)) * g.natDegree := by simp [hr]
+                  r * g.natDegree = (k + (r - k)) * g.natDegree := by
+                    simp [Nat.add_sub_of_le hk]
                   _ = k * g.natDegree + (r - k) * g.natDegree := by
-                        simp [Nat.add_mul]
-              have hRHS_eq :
-                  f.natDegree + r * g.natDegree - k
-                      - (r - k) * g.natDegree =
+                    simp [Nat.add_mul]
+              have hRHS :
+                  (f.natDegree + r * g.natDegree - k) - den.natDegree =
                     f.natDegree + k * g.natDegree - k := by
-                have h1 :
-                    f.natDegree + r * g.natDegree - k
-                        - (r - k) * g.natDegree =
-                      f.natDegree + r * g.natDegree
-                        - (k + (r - k) * g.natDegree) := by
-                  simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
-                      (tsub_add_eq_tsub_tsub
-                        (a := f.natDegree + r * g.natDegree)
-                        (b := k)
-                        (c := (r - k) * g.natDegree)).symm
-                have h2 :
-                    f.natDegree + r * g.natDegree
-                        - (k + (r - k) * g.natDegree) =
-                      f.natDegree + k * g.natDegree - k := by
-                  calc
-                    f.natDegree + r * g.natDegree
-                        - (k + (r - k) * g.natDegree)
-                        = f.natDegree
-                            + (k * g.natDegree + (r - k) * g.natDegree)
-                            - (k + (r - k) * g.natDegree) := by
-                            simp [hr_mul]
-                    _ = f.natDegree + k * g.natDegree
-                          + (r - k) * g.natDegree
-                          - (k + (r - k) * g.natDegree) := by
-                          simp [Nat.add_assoc]
-                    _ = f.natDegree + k * g.natDegree - k := by
-                      simpa [Nat.add_comm, Nat.add_left_comm,
-                        Nat.add_assoc] using
-                        (add_tsub_add_eq_tsub_right
-                          (a := f.natDegree + k * g.natDegree)
-                          (c := (r - k) * g.natDegree)
-                          (b := k))
-                exact h1.trans h2
-              have hq_nat_le :
-                  q.natDegree ≤ f.natDegree + k * g.natDegree - k := by
-                have := hsub_le
-                simpa [hq_eq, hRHS_eq] using this
-              have hdeg_q' :
-                  Polynomial.degree q ≤
-                    ((f.natDegree + k * g.natDegree - k : ℕ) :
-                      WithBot ℕ) :=
-                (Polynomial.natDegree_le_iff_degree_le).1 hq_nat_le
-              have hf_deg :
-                  Polynomial.degree f =
-                    (Polynomial.natDegree f : WithBot ℕ) :=
-                Polynomial.degree_eq_natDegree hf
-              have hg_deg :
-                  Polynomial.degree g =
-                    (Polynomial.natDegree g : WithBot ℕ) :=
-                Polynomial.degree_eq_natDegree hg
-              simpa [hf_deg, hg_deg] using hdeg_q'
-          simpa [hnum, hden, hq_def] using h_deg_q
+                calc
+                  (f.natDegree + r * g.natDegree - k) - den.natDegree
+                      = f.natDegree + r * g.natDegree - (k + den.natDegree) := by
+                          simpa [Nat.sub_sub]
+                  _ = f.natDegree + (k * g.natDegree + den.natDegree) - (k + den.natDegree) := by
+                        simp [hr_mul, hden_nat, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+                  _ = f.natDegree + k * g.natDegree - k := by
+                        calc
+                          f.natDegree + (k * g.natDegree + den.natDegree) - (k + den.natDegree)
+                              = (f.natDegree + k * g.natDegree + den.natDegree) - (k + den.natDegree) := by
+                                  simp [Nat.add_assoc]
+                          _ = (f.natDegree + k * g.natDegree) - k := by
+                                simpa [Nat.add_assoc] using
+                                  (Nat.add_sub_add_right (f.natDegree + k * g.natDegree) den.natDegree k)
+                          _ = f.natDegree + k * g.natDegree - k := rfl
+              have : q.natDegree ≤ (f.natDegree + r * g.natDegree - k) - den.natDegree := by
+                simpa [hq_nat] using hsub
+              simpa [hRHS] using this
+            have hdeg_q :
+                Polynomial.degree q ≤
+                  ((f.natDegree + k * g.natDegree - k : ℕ) : WithBot ℕ) :=
+              (Polynomial.natDegree_le_iff_degree_le).1 hq_nat_le
+            simpa [q, Polynomial.degree_eq_natDegree hf, Polynomial.degree_eq_natDegree hg] using
+              hdeg_q
 
 lemma hasse_divisibility (F : Type*) [Field F] (f : Polynomial F) (a : F) (ℓ : ℕ)
     (hvan : ∀ k < ℓ, (hasseDerivOp F k f).eval a = 0) :

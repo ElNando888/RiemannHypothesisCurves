@@ -14,7 +14,7 @@ All statements, proofs, and documentation were created by Gauss, Math Inc's fron
 
 ## Highlights
 
-- **Scope:** ≈4000 lines of Lean.
+- **Scope:** ≈2900 lines of Lean.
 - **Workflow:** AI-generated formalization from a LaTeX blueprint with human scaffolding.
 - **Result:** a complete Lean theorem establishing the Riemann Hypothesis for hyperelliptic curves over finite fields.
 
