@@ -42,3 +42,13 @@ images/blueprint_dep_graph.png
 
 ## Environment
 .env
+
+## Local collaboration / work copies
+/wip/
+/scratch/
+/gpt52_work_copies/
+work_log.txt
+**/*.alex_work.lean
+**/*.gpt*_work*.lean
+**/*.work*.lean
+**/*.bak*.lean

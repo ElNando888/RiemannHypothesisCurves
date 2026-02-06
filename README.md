@@ -95,6 +95,14 @@ PY
 - `blueprint/` – LaTeX blueprint + web/PDF build assets (the dependency graph is generated).
 - `home_page/` – Jekyll-based landing page used for the project website.
 
+## Collaboration workflow
+
+When working on a shared filesystem, keep the repo buildable and avoid committing large work copies:
+
+- Use a **work copy** while refactoring a file, then compile the copy, then swap it back.
+- Put work copies under `wip/` (ignored by git) or outside the repo entirely.
+- Avoid leaving `*.alex_work.lean`, `*.work*.lean`, or other backup `.lean` files in the tracked tree.
+
 ---
 
 ## Building
