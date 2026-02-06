@@ -1,5 +1,6 @@
 import Mathlib
 import RiemannHypothesisCurves.StepanovPolynomial
+import RiemannHypothesisCurves.Utils
 
 noncomputable def hyperellipticCurve (F : Type*) [Field F] (f : Polynomial F) : Set (F × F) :=
   {p | p.2 ^ 2 = Polynomial.eval p.1 f}
@@ -274,89 +275,47 @@ by
         rw [hcard_eq] at hfx_sq
         simpa [hc_def, hq] using hfx_sq
     let proj : curveSet → S1_set := fun p => ⟨p.val.1, h_proj p⟩
+    have h_fiber_le : ∀ y : S1_set, Fintype.card {p : curveSet // proj p = y} ≤ 2 := by
+      intro y
+      classical
+      -- each fiber injects into the square-root fiber over `f x`
+      have h_inj :
+          Fintype.card {p : curveSet // proj p = y} ≤
+            Fintype.card {t : F // t ^ 2 = Polynomial.eval y.1 f} := by
+        refine Fintype.card_le_of_injective
+          (fun p : {p : curveSet // proj p = y} =>
+            (⟨p.1.1.2, by
+              have hx : p.1.1.1 = y.1 := by
+                simpa [proj] using congrArg Subtype.val p.2
+              simpa [hx] using p.1.2⟩ : {t : F // t ^ 2 = Polynomial.eval y.1 f}))
+          (by
+            intro p₁ p₂ h
+            apply Subtype.ext
+            apply Subtype.ext
+            ext
+            · have hx₁ : p₁.1.1.1 = y.1 := by
+                simpa [proj] using congrArg Subtype.val p₁.2
+              have hx₂ : p₂.1.1.1 = y.1 := by
+                simpa [proj] using congrArg Subtype.val p₂.2
+              simpa [hx₁, hx₂]
+            · exact congrArg Subtype.val h)
+      exact le_trans h_inj (card_sq_eq_le_two (F := F) (a := Polynomial.eval y.1 f))
     have h_count : Fintype.card curveSet ≤ 2 * Fintype.card S1_set := by
-      have h_sigma : Fintype.card curveSet =
-          Fintype.card ((y : S1_set) × {x : curveSet // proj x = y}) :=
-        Fintype.card_congr (Equiv.sigmaFiberEquiv proj).symm
-      rw [h_sigma, Fintype.card_sigma]
-      have h_fiber_le : ∀ y : S1_set, Fintype.card {x : curveSet // proj x = y} ≤ 2 := by
-        intro ⟨x, hx⟩
-        have h_card_sq_roots : Fintype.card {y' : F // y' ^ 2 = Polynomial.eval x f} ≤ 2 := by
-          by_cases h0 : Polynomial.eval x f = 0
-          · have h_unique : {y' : F // y' ^ 2 = Polynomial.eval x f} ≃ {y' : F // y' = 0} := by
-              refine Equiv.subtypeEquiv (Equiv.refl F) ?_
-              intro y'
-              simp only [Equiv.refl_apply, h0, sq_eq_zero_iff]
-            rw [Fintype.card_congr h_unique, Fintype.card_unique]
-            norm_num
-          · let p : Polynomial F := Polynomial.X ^ 2 - Polynomial.C (Polynomial.eval x f)
-            have hp_ne : p ≠ 0 := by
-              simp only [p, ne_eq, sub_eq_zero]
-              intro h_eq
-              have h_deg1 : (Polynomial.X ^ 2 : Polynomial F).natDegree = 2 :=
-                Polynomial.natDegree_X_pow 2
-              have h_deg2 : (Polynomial.C (Polynomial.eval x f) : Polynomial F).natDegree = 0 :=
-                Polynomial.natDegree_C _
-              have : (2 : ℕ) = 0 := by rw [← h_deg1, h_eq, h_deg2]
-              norm_num at this
-            have h_deg : p.natDegree ≤ 2 := by
-              simp only [p]
-              calc (Polynomial.X ^ 2 - Polynomial.C (Polynomial.eval x f)).natDegree
-                  ≤ max (Polynomial.X ^ 2 : Polynomial F).natDegree
-                      (Polynomial.C (Polynomial.eval x f)).natDegree :=
-                    Polynomial.natDegree_sub_le _ _
-                _ = max 2 0 := by simp [Polynomial.natDegree_C]
-                _ = 2 := by norm_num
-            have h_roots : ∀ y' : F, p.IsRoot y' ↔ y' ^ 2 = Polynomial.eval x f := by
-              intro y'
-              simp only [p, Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_pow,
-                Polynomial.eval_X, Polynomial.eval_C, sub_eq_zero]
-            have h_card_roots : Multiset.card p.roots ≤ p.natDegree := Polynomial.card_roots' p
-            have h_inj : Function.Injective (fun (y' : {y' : F // y' ^ 2 = Polynomial.eval x f}) =>
-                (⟨y'.val, (Polynomial.mem_roots hp_ne).mpr ((h_roots y'.val).mpr y'.property)⟩ :
-                  {y' : F // y' ∈ p.roots})) := by
-              intro ⟨a, ha⟩ ⟨b, hb⟩ h
-              simp only [Subtype.mk.injEq] at h
-              exact Subtype.ext h
-            have h_card_le_roots : Fintype.card {y' : F // y' ^ 2 = Polynomial.eval x f} ≤
-                Fintype.card {y' : F // y' ∈ p.roots} := Fintype.card_le_of_injective _ h_inj
-            have h_fintype_le_multiset :
-                Fintype.card {y' : F // y' ∈ p.roots} ≤ Multiset.card p.roots := by
-              calc Fintype.card {y' : F // y' ∈ p.roots}
-                  ≤ Fintype.card p.roots.toFinset := by
-                    refine Fintype.card_le_of_injective
-                      (fun ⟨y', hy'⟩ => ⟨y', Multiset.mem_toFinset.mpr hy'⟩) ?_
-                    intro ⟨a, ha⟩ ⟨b, hb⟩ h
-                    simp only [Subtype.mk.injEq] at h
-                    exact Subtype.ext h
-                _ = p.roots.toFinset.card := Fintype.card_coe p.roots.toFinset
-                _ ≤ Multiset.card p.roots := Multiset.toFinset_card_le p.roots
-            calc Fintype.card {y' : F // y' ^ 2 = Polynomial.eval x f}
-                ≤ Fintype.card {y' : F // y' ∈ p.roots} := h_card_le_roots
-              _ ≤ Multiset.card p.roots := h_fintype_le_multiset
-              _ ≤ p.natDegree := h_card_roots
-              _ ≤ 2 := h_deg
-        have h_fiber_inj : Function.Injective (fun (p' : {p' : curveSet // proj p' = ⟨x, hx⟩}) =>
-            (⟨p'.val.val.2, by
-              have hp := p'.val.property
-              have hpx : proj p'.val = ⟨x, hx⟩ := p'.property
-              simp only [proj] at hpx
-              have hx_eq : p'.val.val.1 = x := Subtype.ext_iff.mp hpx
-              simp only [hx_eq] at hp
-              exact hp⟩ : {y' : F // y' ^ 2 = Polynomial.eval x f})) := by
-          intro ⟨⟨⟨x1, y1⟩, hp1⟩, hproj1⟩ ⟨⟨⟨x2, y2⟩, hp2⟩, hproj2⟩ h
-          simp only [Subtype.mk.injEq] at h
-          simp only [proj] at hproj1 hproj2
-          have hx1_eq : x1 = x := Subtype.ext_iff.mp hproj1
-          have hx2_eq : x2 = x := Subtype.ext_iff.mp hproj2
-          simp only [Subtype.mk.injEq]
-          refine Subtype.ext ?_
-          simp only [Prod.mk.injEq]
-          exact ⟨hx1_eq.trans hx2_eq.symm, h⟩
-        exact le_trans (Fintype.card_le_of_injective _ h_fiber_inj) h_card_sq_roots
-      calc ∑ y : S1_set, Fintype.card {x : curveSet // proj x = y}
-          ≤ ∑ _ : S1_set, 2 := Finset.sum_le_sum (fun y _ => h_fiber_le y)
-        _ = 2 * Fintype.card S1_set := by simp [Finset.sum_const, Finset.card_univ]; ring
+      classical
+      calc
+        Fintype.card curveSet =
+            ∑ y : S1_set, Fintype.card {p : curveSet // proj p = y} := by
+              calc
+                Fintype.card curveSet =
+                    Fintype.card ((y : S1_set) × {p : curveSet // proj p = y}) := by
+                      exact Fintype.card_congr (Equiv.sigmaFiberEquiv proj).symm
+                _ = ∑ y : S1_set, Fintype.card {p : curveSet // proj p = y} := by
+                      simpa using
+                        (Fintype.card_sigma (β := fun y : S1_set => {p : curveSet // proj p = y}))
+        _ ≤ ∑ _y : S1_set, 2 := by
+              exact Finset.sum_le_sum (fun y _ => h_fiber_le y)
+        _ = 2 * Fintype.card S1_set := by
+              simp [Finset.sum_const, Finset.card_univ, mul_comm]
     exact_mod_cast h_count
   have h := lt_of_le_of_lt h_N_le_2S1 h_two_S1_bound
   simpa [curveSet, S1_set, hc_def, hm_def] using h
