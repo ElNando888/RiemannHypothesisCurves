@@ -50,5 +50,7 @@ images/blueprint_dep_graph.png
 work_log.txt
 **/*.alex_work.lean
 **/*.gpt*_work*.lean
+**/*_gpt*_tmp.lean
+**/*_gpt*_tmp.md
 **/*.work*.lean
 **/*.bak*.lean
