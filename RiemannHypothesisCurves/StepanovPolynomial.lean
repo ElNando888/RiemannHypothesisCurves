@@ -129,15 +129,8 @@ by
     simpa [Nat.cast_mul, Nat.cast_sub hq_ge_one, mul_comm, mul_left_comm, mul_assoc] using
       (show ((2 * c : ℕ) : ℚ) ≤ ((q - 1 : ℕ) : ℚ) from by exact_mod_cast h2c_le_q1_nat)
   have hc_le : (c : ℚ) ≤ ((q : ℚ) - 1) / 2 := by
-    have h2_pos : (0 : ℚ) < (2 : ℚ) := by norm_num
-    have hq1_eq' :
-        (2 : ℚ) * (((q : ℚ) - 1) / 2) = (q : ℚ) - 1 := by
-      simp [div_eq_mul_inv, mul_comm, mul_left_comm,
-        (two_ne_zero : (2 : ℚ) ≠ 0)]
-    have h2c_le : (2 : ℚ) * (c : ℚ)
-        ≤ (2 : ℚ) * (((q : ℚ) - 1) / 2) := by
-      simpa [hq1_eq'] using h2c_le_q1
-    exact (le_of_mul_le_mul_left h2c_le h2_pos)
+    have h2pos : (0 : ℚ) < 2 := by norm_num
+    linarith [h2c_le_q1, h2pos]
   have hcm_le : (c : ℚ) * (m : ℚ)
       ≤ ((q : ℚ) - 1) / 2 * (m : ℚ) :=
     mul_le_mul_of_nonneg_right hc_le (le_of_lt hm_pos')
@@ -172,9 +165,8 @@ by
   have h6Δ_pos : 0 < 6 * ((m : ℚ) * (q : ℚ) - B2) := by
     simpa [h_eq] using h_num_pos
   have hΔ_pos : 0 < (m : ℚ) * (q : ℚ) - B2 := by
-    have h6Δ_pos' : 0 < ((m : ℚ) * (q : ℚ) - B2) * 6 := by
-      simpa [mul_comm] using h6Δ_pos
-    exact pos_of_mul_pos_left h6Δ_pos' (by norm_num)
+    have h6pos : (0 : ℚ) < 6 := by norm_num
+    linarith [h6Δ_pos, h6pos]
   have hB2_lt : B2 < (m : ℚ) * (q : ℚ) := sub_pos.mp hΔ_pos
   have hcore_lt_mq : core < (m : ℚ) * (q : ℚ) :=
     lt_of_le_of_lt hcore_le_B2 hB2_lt
