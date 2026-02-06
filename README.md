@@ -22,7 +22,7 @@ Then open `blueprint/dep_graph_document.html`.
 
 ## Highlights
 
-- **Scope:** ≈3400 lines of Lean (tracked Lean LOC: 3431).
+- **Scope:** ≈2900 lines of Lean (tracked Lean LOC: 2899).
 - **Workflow:** AI-generated formalization from a LaTeX blueprint with human scaffolding.
 - **Result:** a complete Lean theorem establishing the Riemann Hypothesis for hyperelliptic curves over finite fields.
 
@@ -58,8 +58,11 @@ Lean LOC is computed as the total number of lines across all git-tracked `*.lean
 | `5481845` | 2026-02-05 | Chore: ignore work copies; document workflow | 3728 | 3728 | +0 |
 | `33a151d` | 2026-02-05 | Docs: regenerate README table from origin/refactor | 3728 | 3728 | +0 |
 | `12ba4d6` | 2026-02-05 | Docs: switch README LOC to Lean LOC | 3728 | 3728 | +0 |
-| `5506065` | 2026-02-06 | Refactor: compress Stepanov/Hasse proofs | 3728 | 3439 | -289 |
-| `44011d2` | 2026-02-06 | Refactor: shorten StepanovPolynomial inequalities | 3439 | 3431 | -8 |
+| `5506065` | 2026-02-05 | Refactor: compress Stepanov/Hasse proofs | 3728 | 3439 | -289 |
+| `44011d2` | 2026-02-05 | Refactor: shorten StepanovPolynomial inequalities | 3439 | 3431 | -8 |
+| `b9f6574` | 2026-02-05 | Docs: update README Lean LOC table | 3431 | 3431 | +0 |
+| `6a28759` | 2026-02-05 | Refactor: slim core proof files | 3431 | 3038 | -393 |
+| `fee6341` | 2026-02-05 | Refactor: slim Stepanov auxiliary/system/nonsquare | 3038 | 2899 | -139 |
 
 To regenerate this table locally:
 
