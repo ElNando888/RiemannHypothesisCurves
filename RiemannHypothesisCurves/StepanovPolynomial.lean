@@ -5,30 +5,22 @@ import RiemannHypothesisCurves.StepanovSystem
 noncomputable def S_a (F : Type*) [Field F] (f : Polynomial F) (c : ℕ) (a : F) : Set F :=
   {x | Polynomial.eval x f = 0 ∨ (Polynomial.eval x f) ^ c = a}
 
-theorem stepanov_polynomial
-  (F : Type*) [Field F] [Fintype F] (hF : ringChar F ≠ 2)
-  (f : Polynomial F) (q ℓ : ℕ) (a : F)
-  (hq : q = Fintype.card F) (hm3 : 3 ≤ f.natDegree)
-  (hnsq : ¬ ∃ g : Polynomial (AlgebraicClosure F),
+theorem stepanov_polynomial (F : Type*) [Field F] [Fintype F] (hF : ringChar F ≠ 2)
+    (f : Polynomial F) (q ℓ : ℕ) (a : F) (hq : q = Fintype.card F) (hm3 : 3 ≤ f.natDegree)
+    (hnsq : ¬ ∃ g : Polynomial (AlgebraicClosure F),
       g * g = Polynomial.map (algebraMap F (AlgebraicClosure F)) f)
-  (hq6m : q > 6 * f.natDegree) (hℓ_pos : 0 < ℓ) (hl : ℓ ≤ q / 3) :
-  ∃ r : Polynomial F,
-    r ≠ 0 ∧
-    ((r.natDegree : ℝ) <
-      ((f.natDegree * q : ℕ) : ℝ) +
-        ((ℓ * q : ℕ) : ℝ) / 2 +
-        ((ℓ * ℓ * f.natDegree : ℕ) : ℝ)) ∧
-    (∀ x ∈ S_a F f ((q - 1) / 2) a, ∀ k < ℓ, (hasseDerivOp F k r).eval x = 0) :=
-by
-  set m : ℕ := f.natDegree with hm_def
-  have hfdeg : f.natDegree = m := by simp [hm_def]
+    (hq6m : q > 6 * f.natDegree) (hℓ_pos : 0 < ℓ) (hl : ℓ ≤ q / 3) :
+    ∃ r : Polynomial F,
+      r ≠ 0 ∧
+        ((r.natDegree : ℝ) < ((f.natDegree * q : ℕ) : ℝ) + ((ℓ * q : ℕ) : ℝ) / 2 + ((ℓ * ℓ * f.natDegree : ℕ) : ℝ)) ∧
+          (∀ x ∈ S_a F f ((q - 1) / 2) a, ∀ k < ℓ, (hasseDerivOp F k r).eval x = 0) := by
+  set m : ℕ := f.natDegree with hm_def; have hfdeg : f.natDegree = m := by simp [hm_def]
   have hm3' : 3 ≤ m := by simpa [hm_def] using hm3
   have hm_pos : 0 < m := lt_of_lt_of_le (by decide : 0 < 3) hm3'
   have hm_ge_two : 2 ≤ m := le_trans (by decide : 2 ≤ 3) hm3'
   have h6mq : 6 * m < q := by simpa [hm_def] using hq6m
   have hq_pos_nat : 0 < q := lt_of_le_of_lt (Nat.zero_le _) h6mq
-  let c : ℕ := (q - 1) / 2
-  let d : ℕ := Nat.ceil (((q : ℚ) - m) / 2) - 1
+  let c : ℕ := (q - 1) / 2; let d : ℕ := Nat.ceil (((q : ℚ) - m) / 2) - 1
   set Jreal : ℚ := (ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ) with hJreal_def
   set J : ℕ := Nat.ceil Jreal with hJ_def
   have hJ_expr_pos :

@@ -1,22 +1,15 @@
 import Mathlib
 noncomputable def hasseDerivOp (F : Type*) [Field F] (k : ℕ) : Polynomial F → Polynomial F :=
   Polynomial.hasseDeriv k
-lemma sum_hasseDeriv_piAntidiag_eq_sum_fin
-    (F : Type*) [Field F] (k r : ℕ) (f : Fin r → Polynomial F) :
-    (∑ j ∈ ((Finset.univ : Finset (Fin r)).piAntidiag k),
-        (Finset.univ : Finset (Fin r)).prod
-          (fun i => hasseDerivOp F (j i) (f i)))
-      =
-      (∑ j ∈ (((Finset.univ : Finset (Fin r → Fin (k + 1)))).filter
-                  (fun j =>
-                    ((Finset.univ : Finset (Fin r)).sum (fun i => (j i).val)) = k)),
-          (Finset.univ : Finset (Fin r)).prod
-            (fun i => hasseDerivOp F ((j i).val) (f i))) :=
-by
-  let phi :
-      (j : Fin r → ℕ) →
-      j ∈ ((Finset.univ : Finset (Fin r)).piAntidiag k) →
-      (Fin r → Fin (k + 1)) :=
+
+lemma sum_hasseDeriv_piAntidiag_eq_sum_fin (F : Type*) [Field F] (k r : ℕ) (f : Fin r → Polynomial F) :
+    (∑ j ∈ (Finset.univ : Finset (Fin r)).piAntidiag k,
+        (Finset.univ : Finset (Fin r)).prod (fun i => hasseDerivOp F (j i) (f i))) =
+      ∑ j ∈
+          (Finset.univ : Finset (Fin r → Fin (k + 1))).filter
+            (fun j => (Finset.univ : Finset (Fin r)).sum (fun i => (j i).val) = k),
+        (Finset.univ : Finset (Fin r)).prod (fun i => hasseDerivOp F ((j i).val) (f i)) := by
+  let phi : (j : Fin r → ℕ) → j ∈ ((Finset.univ : Finset (Fin r)).piAntidiag k) → (Fin r → Fin (k + 1)) :=
     fun j hj i =>
       ⟨j i,
         Nat.lt_succ_of_le <|
@@ -27,8 +20,7 @@ by
             simpa [hj_sum] using
               (Finset.single_le_sum_of_canonicallyOrdered
                 (f := j) (s := (Finset.univ : Finset (Fin r))) (i := i) (by simp))⟩
-  refine
-    Finset.sum_bij (fun j hj => phi j hj) ?_ ?_ ?_ ?_
+  refine Finset.sum_bij (fun j hj => phi j hj) ?_ ?_ ?_ ?_
   · intro j hj
     rcases Finset.mem_piAntidiag.mp hj with ⟨hj_sum, -⟩
     simp [phi, hj_sum]
@@ -48,12 +40,9 @@ by
     simp [phi]
 
 lemma hasseLeibniz_general (F : Type*) [Field F] (k r : ℕ) (f : Fin r → Polynomial F) :
-  hasseDerivOp F k ((Finset.univ : Finset (Fin r)).prod (fun i => f i)) =
-    ∑ j ∈
-        ((Finset.univ : Finset (Fin r → Fin (k + 1))).filter
-          (fun j => (Finset.univ : Finset (Fin r)).sum (fun i => (j i).val) = k)),
-      (Finset.univ : Finset (Fin r)).prod (fun i => hasseDerivOp F ((j i).val) (f i)) :=
-by
+    hasseDerivOp F k ((Finset.univ : Finset (Fin r)).prod f) =
+      ∑ j ∈ (Finset.univ : Finset (Fin r → Fin (k + 1))).filter (fun j => (Finset.univ : Finset (Fin r)).sum (fun i => (j i).val) = k),
+        (Finset.univ : Finset (Fin r)).prod (fun i => hasseDerivOp F ((j i).val) (f i)) := by
   classical
   have hasseLeibniz_piAntidiag_finset :
       ∀ (s : Finset (Fin r)) (k : ℕ),
@@ -91,14 +80,12 @@ by
             ∑ p ∈ Finset.antidiagonal k,
               ∑ g ∈ s.piAntidiag p.2,
                 w ((addRightEmbedding (fun t => if t = a then p.1 else 0)) g) := by
-        -- `piAntidiag_cons` + `sum_disjiUnion`, then remove the `map` with `sum_map`.
         have :
             (∑ j ∈ u.piAntidiag k, w j) =
               ∑ p ∈ Finset.antidiagonal k,
                 ∑ j ∈ (s.piAntidiag p.2).map
                         (addRightEmbedding (fun t => if t = a then p.1 else 0)),
                   w j := by
-          -- avoid `simp` rewriting `cons` as `insert` so that `piAntidiag_cons` applies.
           dsimp [u]
           rw [Finset.piAntidiag_cons (i := a) (s := s) (hi := ha) (n := k)]
           simpa using (Finset.sum_disjiUnion
@@ -150,12 +137,10 @@ by
     (hasseLeibniz_piAntidiag_finset (Finset.univ : Finset (Fin r)) k).trans
       (sum_hasseDeriv_piAntidiag_eq_sum_fin F k r f)
 
-lemma hasseDerivOp_X_sub_C_pow (F : Type*) [Field F]
-    (k r : ℕ) (hk : k ≤ r) :
+lemma hasseDerivOp_X_sub_C_pow (F : Type*) [Field F] (k r : ℕ) (hk : k ≤ r) :
     ∀ a : F,
-      hasseDerivOp F k ((Polynomial.X - Polynomial.C a)^r) =
-        Polynomial.C (Nat.choose r k : F) * (Polynomial.X - Polynomial.C a)^(r - k) :=
-by
+      hasseDerivOp F k ((Polynomial.X - Polynomial.C a) ^ r) =
+        Polynomial.C (Nat.choose r k : F) * (Polynomial.X - Polynomial.C a) ^ (r - k) := by
   intro a
   ext n
   have hcoeff_pow :
@@ -225,15 +210,10 @@ by
   rw [hL, hR]
   simpa [hscalar]
 
-lemma hasseDerivOp_prod_single_polynomial_dvd
-    (F : Type*) [Field F] (k r : ℕ)
-    (g : Polynomial F)
-    (j : Fin r → Fin (k + 1))
-    (h_sum : (Finset.univ : Finset (Fin r)).sum (fun i => (j i).val) = k) :
-    g^(r - k) ∣
-      (Finset.univ : Finset (Fin r)).prod
-        (fun i => hasseDerivOp F (j i).val g) :=
-by
+lemma hasseDerivOp_prod_single_polynomial_dvd (F : Type*) [Field F] (k r : ℕ) (g : Polynomial F)
+    (j : Fin r → Fin (k + 1)) (h_sum : (Finset.univ : Finset (Fin r)).sum (fun i => (j i).val) = k) :
+    g ^ (r - k) ∣
+      (Finset.univ : Finset (Fin r)).prod (fun i => hasseDerivOp F (j i).val g) := by
   classical
   let s : Finset (Fin r) := Finset.univ
   let Z : Finset (Fin r) := s.filter fun i => (j i).val = 0
@@ -275,7 +255,6 @@ by
       Nat.add_le_add_left hNZ_card_le_k _
     have : (Z.card + NZ.card) - k ≤ (Z.card + k) - k :=
       Nat.sub_le_sub_right hsum_le _
-    -- `s.card = r`
     simpa [s, hcard, Nat.add_sub_cancel_left] using this
   have hZprod :
       Z.prod (fun i => hasseDerivOp F (j i).val g) = g ^ Z.card := by
@@ -302,11 +281,8 @@ by
     dvd_mul_of_dvd_left hdiv_Z (NZ.prod fun i => hasseDerivOp F (j i).val g)
   simpa [s, hprod_split] using this
 
-lemma hasseDerivOp_pow_dvd
-    (F : Type*) [Field F] (k r : ℕ) :
-    ∀ g : Polynomial F,
-      g^(r - k) ∣ hasseDerivOp F k (g^r) :=
-by
+lemma hasseDerivOp_pow_dvd (F : Type*) [Field F] (k r : ℕ) :
+    ∀ g : Polynomial F, g ^ (r - k) ∣ hasseDerivOp F k (g ^ r) := by
   intro g
   have hLeib' := hasseLeibniz_general F k r (fun _ : Fin r => g)
   simp [Finset.card_univ, Fintype.card_fin] at hLeib'
@@ -315,11 +291,8 @@ by
   intro j hj
   simpa using hasseDerivOp_prod_single_polynomial_dvd F k r g j (Finset.mem_filter.1 hj).2
 
-lemma hasseDerivOp_mul_pow_dvd (F : Type*) [Field F]
-    (k r : ℕ) :
-    ∀ f g : Polynomial F,
-      g^(r - k) ∣ hasseDerivOp F k (f * g^r) :=
-by
+lemma hasseDerivOp_mul_pow_dvd (F : Type*) [Field F] (k r : ℕ) :
+    ∀ f g : Polynomial F, g ^ (r - k) ∣ hasseDerivOp F k (f * g ^ r) := by
   intro f g
   have :
       g ^ (r - k) ∣
@@ -337,17 +310,15 @@ by
     ← Polynomial.hasseDeriv_mul (R := F) (k := k) (f := f) (g := g ^ r)] using this
 
 lemma hasse_formulas (F : Type*) [Field F] (k r : ℕ) (hk : k ≤ r) :
-  (∀ a : F,
-      hasseDerivOp F k ((Polynomial.X - Polynomial.C a)^r) =
-        Polynomial.C (Nat.choose r k : F) * (Polynomial.X - Polynomial.C a)^(r - k))
-  ∧
-  (∀ f g : Polynomial F,
-      g^(r - k) ∣ hasseDerivOp F k (f * g^r) ∧
-      Polynomial.degree ((hasseDerivOp F k (f * g^r)) / (g^(r - k))) ≤
-        (match (Polynomial.degree f + (k : WithBot ℕ) * Polynomial.degree g) with
-         | ⊥ => ⊥
-         | some n => some (n - k))) :=
-by
+    (∀ a : F,
+        hasseDerivOp F k ((Polynomial.X - Polynomial.C a) ^ r) =
+          Polynomial.C (Nat.choose r k : F) * (Polynomial.X - Polynomial.C a) ^ (r - k)) ∧
+      (∀ f g : Polynomial F,
+          g ^ (r - k) ∣ hasseDerivOp F k (f * g ^ r) ∧
+            Polynomial.degree (hasseDerivOp F k (f * g ^ r) / g ^ (r - k)) ≤
+              match Polynomial.degree f + (k : WithBot ℕ) * Polynomial.degree g with
+              | ⊥ => ⊥
+              | some n => some (n - k)) := by
   constructor
   · intro a
     simpa using
@@ -441,8 +412,7 @@ by
 
 lemma hasse_divisibility (F : Type*) [Field F] (f : Polynomial F) (a : F) (ℓ : ℕ)
     (hvan : ∀ k < ℓ, (hasseDerivOp F k f).eval a = 0) :
-    (Polynomial.X - Polynomial.C a)^ℓ ∣ f :=
-by
+    (Polynomial.X - Polynomial.C a) ^ ℓ ∣ f := by
   set t : Polynomial F := Polynomial.taylor a f
   have hcoeff0 : ∀ k < ℓ, t.coeff k = 0 := by
     intro k hk

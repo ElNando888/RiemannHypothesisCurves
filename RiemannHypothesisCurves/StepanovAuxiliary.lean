@@ -1,16 +1,13 @@
 import Mathlib
 import RiemannHypothesisCurves.HasseDerivatives
 
-lemma auxiliary_derivatives (F : Type*) [Field F]
-    (f : Polynomial F) (m d ℓ c : ℕ)
-    (hfdeg : f.natDegree = m)
-    (rj sj : Polynomial F) (hr : rj.natDegree ≤ d) (hs : sj.natDegree ≤ d)
+lemma auxiliary_derivatives (F : Type*) [Field F] (f : Polynomial F) (m d ℓ c : ℕ)
+    (hfdeg : f.natDegree = m) (rj sj : Polynomial F) (hr : rj.natDegree ≤ d) (hs : sj.natDegree ≤ d)
     (k : ℕ) (hk : k ≤ ℓ) :
-  ∃ rjk sjk : Polynomial F,
-    hasseDerivOp F k (f^ℓ * rj) = rjk * f^(ℓ - k) ∧
-    hasseDerivOp F k (f^(ℓ + c) * sj) = sjk * f^(ℓ + c - k) ∧
-    rjk.natDegree ≤ d + k * (m - 1) ∧ sjk.natDegree ≤ d + k * (m - 1) :=
-by
+    ∃ rjk sjk : Polynomial F,
+      hasseDerivOp F k (f ^ ℓ * rj) = rjk * f ^ (ℓ - k) ∧
+        hasseDerivOp F k (f ^ (ℓ + c) * sj) = sjk * f ^ (ℓ + c - k) ∧
+          rjk.natDegree ≤ d + k * (m - 1) ∧ sjk.natDegree ≤ d + k * (m - 1) := by
   by_cases hf0 : f = 0
   · subst hf0
     have hm0 : m = 0 := by simpa [Polynomial.natDegree_zero] using hfdeg.symm
@@ -69,48 +66,35 @@ by
             | ⊥ => ⊥
             | some n => some (n - k)) := by
       simpa [hsjk_def, mul_comm] using hdeg_sj_core
-    have hdeg_rj_le_d : Polynomial.degree rj ≤ (d : WithBot ℕ) :=
-      (Polynomial.natDegree_le_iff_degree_le).1 hr
-    have hdeg_sj_le_d : Polynomial.degree sj ≤ (d : WithBot ℕ) :=
-      (Polynomial.natDegree_le_iff_degree_le).1 hs
-    let Ftrunc : WithBot ℕ → WithBot ℕ := fun x => match x with | ⊥ => ⊥ | some n => some (n - k)
-    have hF_mono : Monotone Ftrunc := by
-      intro x y hxy
-      cases x using WithBot.recBotCoe <;> cases y using WithBot.recBotCoe <;>
-        simp [Ftrunc] at hxy ⊢
-      exact WithBot.coe_le_coe.2 (Nat.sub_le_sub_right hxy k)
-    have hF_y :
-        Ftrunc ((d : WithBot ℕ) + (k : WithBot ℕ) * Polynomial.degree f) =
-          ((d + k * m - k : ℕ) : WithBot ℕ) := by
-      have hy :
-          ((d : WithBot ℕ) + (k : WithBot ℕ) * Polynomial.degree f) =
-            ((d + k * m : ℕ) : WithBot ℕ) := by
-        simp [hdeg_f_eq, mul_comm]
-      simpa [Ftrunc] using congrArg Ftrunc hy
-    have hdeg_rjk_le :
-        Polynomial.degree rjk ≤ ((d + k * m - k : ℕ) : WithBot ℕ) := by
-      have hx :
-          Polynomial.degree rj + (k : WithBot ℕ) * Polynomial.degree f ≤
-            (d : WithBot ℕ) + (k : WithBot ℕ) * Polynomial.degree f :=
-        add_le_add_right hdeg_rj_le_d ((k : WithBot ℕ) * Polynomial.degree f)
-      have : Polynomial.degree rjk ≤
-          Ftrunc ((d : WithBot ℕ) + (k : WithBot ℕ) * Polynomial.degree f) :=
-        le_trans (by simpa [Ftrunc] using hdeg_rjk_match) (hF_mono hx)
-      simpa [hF_y] using this
-    have hdeg_sjk_le :
-        Polynomial.degree sjk ≤ ((d + k * m - k : ℕ) : WithBot ℕ) := by
-      have hx :
-          Polynomial.degree sj + (k : WithBot ℕ) * Polynomial.degree f ≤
-            (d : WithBot ℕ) + (k : WithBot ℕ) * Polynomial.degree f :=
-        add_le_add_right hdeg_sj_le_d ((k : WithBot ℕ) * Polynomial.degree f)
-      have : Polynomial.degree sjk ≤
-          Ftrunc ((d : WithBot ℕ) + (k : WithBot ℕ) * Polynomial.degree f) :=
-        le_trans (by simpa [Ftrunc] using hdeg_sjk_match) (hF_mono hx)
-      simpa [hF_y] using this
-    have hnat_rjk_le : rjk.natDegree ≤ d + k * m - k :=
-      (Polynomial.natDegree_le_iff_degree_le).2 hdeg_rjk_le
-    have hnat_sjk_le : sjk.natDegree ≤ d + k * m - k :=
-      (Polynomial.natDegree_le_iff_degree_le).2 hdeg_sjk_le
+    have hnat_le_of_degree_match (t q : Polynomial F) (ht : t.natDegree ≤ d)
+        (hdeg_match :
+          Polynomial.degree q ≤
+            (match Polynomial.degree t + (k : WithBot ℕ) * Polynomial.degree f with
+              | ⊥ => ⊥
+              | some n => some (n - k))) :
+        q.natDegree ≤ d + k * m - k := by
+      have htdeg : Polynomial.degree t ≤ (d : WithBot ℕ) := (Polynomial.natDegree_le_iff_degree_le).1 ht
+      have hfdeg' : Polynomial.degree f = (m : WithBot ℕ) := by simpa [hfdeg] using Polynomial.degree_eq_natDegree hf0
+      have hsum_le :
+          Polynomial.degree t + (k : WithBot ℕ) * Polynomial.degree f ≤ ((d + k * m : ℕ) : WithBot ℕ) := by
+        simpa [hfdeg', add_assoc, add_left_comm, add_comm, mul_assoc, mul_left_comm, mul_comm] using
+          add_le_add_right htdeg ((k : WithBot ℕ) * Polynomial.degree f)
+      cases hs : Polynomial.degree t + (k : WithBot ℕ) * Polynomial.degree f using WithBot.recBotCoe with
+      | bot =>
+          have hq0 : q = 0 := by
+            have : Polynomial.degree q = (⊥ : WithBot ℕ) :=
+              (le_bot_iff.mp (by simpa [hs] using hdeg_match))
+            exact (Polynomial.degree_eq_bot.mp this)
+          simp [hq0]
+      | coe n =>
+          have hn_le : n ≤ d + k * m := by
+            have : ((n : ℕ) : WithBot ℕ) ≤ ((d + k * m : ℕ) : WithBot ℕ) := by simpa [hs] using hsum_le
+            exact WithBot.coe_le_coe.mp this
+          have hdegq : Polynomial.degree q ≤ ((n - k : ℕ) : WithBot ℕ) := by simpa [hs] using hdeg_match
+          have : n - k ≤ d + k * m - k := Nat.sub_le_sub_right hn_le k
+          exact (Polynomial.natDegree_le_iff_degree_le).2 (le_trans hdegq (WithBot.coe_le_coe.2 this))
+    have hnat_rjk_le : rjk.natDegree ≤ d + k * m - k := hnat_le_of_degree_match rj rjk hr hdeg_rjk_match
+    have hnat_sjk_le : sjk.natDegree ≤ d + k * m - k := hnat_le_of_degree_match sj sjk hs hdeg_sjk_match
     have h_nat_ineq : d + k * m - k ≤ d + k * (m - 1) := by
       cases m with
       | zero =>
@@ -121,17 +105,11 @@ by
     · exact le_trans hnat_rjk_le h_nat_ineq
     · exact le_trans hnat_sjk_le h_nat_ineq
 
-lemma hasseDerivOp_mul_Xqpow
-  (F : Type*) [Field F] [Fintype F]
-  (q k : ℕ) (hq : q = Fintype.card F) (hkq : k < q)
-  (P : Polynomial F) (j : ℕ) :
-  hasseDerivOp F k (P * (Polynomial.X : Polynomial F)^(j * q)) =
-    hasseDerivOp F k P * (Polynomial.X : Polynomial F)^(j * q) :=
-by
+lemma hasseDerivOp_mul_Xqpow (F : Type*) [Field F] [Fintype F] (q k : ℕ) (hq : q = Fintype.card F) (hkq : k < q)
+    (P : Polynomial F) (j : ℕ) :
+    hasseDerivOp F k (P * (Polynomial.X : Polynomial F) ^ (j * q)) = hasseDerivOp F k P * (Polynomial.X : Polynomial F) ^ (j * q) := by
   classical
-  have choose_mul_card_pow_cast_eq_zero
-      (q j i : ℕ) (hq : q = Fintype.card F)
-      (hi_pos : 0 < i) (hi_lt : i < q) :
+  have choose_mul_card_pow_cast_eq_zero (q j i : ℕ) (hq : q = Fintype.card F) (hi_pos : 0 < i) (hi_lt : i < q) :
       (Nat.choose (j * q) i : F) = 0 := by
     have hfrob :
         (1 + (Polynomial.X : Polynomial F)) ^ q =
@@ -216,21 +194,13 @@ by
         simpa [hasseDerivOp] using this
       simpa using (hmul.trans hsum)
 
-lemma stepanov_form (F : Type*) [Field F] [Fintype F]
-    (f : Polynomial F) (ℓ q c J k : ℕ) (hk : k < ℓ)
-    (hq : q = Fintype.card F) (hkq : k < q)
-    (rj sj : ℕ → Polynomial F) :
-  ∃ rjk sjk : ℕ → Polynomial F,
-    (∀ j, hasseDerivOp F k (f^ℓ * (rj j)) = (rjk j) * f^(ℓ - k)) ∧
-    (∀ j, hasseDerivOp F k (f^(ℓ + c) * (sj j)) = (sjk j) * f^(ℓ + c - k)) ∧
-    hasseDerivOp F k
-      (f^ℓ *
-        (Finset.sum (Finset.range J)
-          (fun j => ((rj j) + (sj j) * f^c) * (Polynomial.X)^(j*q)))) =
-      f^(ℓ - k) *
-        Finset.sum (Finset.range J)
-          (fun j => ((rjk j) + (sjk j) * f^c) * (Polynomial.X)^(j*q)) :=
-by
+lemma stepanov_form (F : Type*) [Field F] [Fintype F] (f : Polynomial F) (ℓ q c J k : ℕ) (hk : k < ℓ)
+    (hq : q = Fintype.card F) (hkq : k < q) (rj sj : ℕ → Polynomial F) :
+    ∃ rjk sjk : ℕ → Polynomial F,
+      (∀ j, hasseDerivOp F k (f ^ ℓ * rj j) = rjk j * f ^ (ℓ - k)) ∧
+        (∀ j, hasseDerivOp F k (f ^ (ℓ + c) * sj j) = sjk j * f ^ (ℓ + c - k)) ∧
+          hasseDerivOp F k (f ^ ℓ * Finset.sum (Finset.range J) (fun j => (rj j + sj j * f ^ c) * Polynomial.X ^ (j * q))) =
+            f ^ (ℓ - k) * Finset.sum (Finset.range J) (fun j => (rjk j + sjk j * f ^ c) * Polynomial.X ^ (j * q)) := by
   classical
   have h_ex :
       ∀ j : ℕ, ∃ rjk_j sjk_j : Polynomial F,
@@ -248,8 +218,7 @@ by
   refine ⟨rjk, sjk, hrjk, hsjk, ?_⟩
   have hpow : f ^ (ℓ + c - k) = f ^ (ℓ - k) * f ^ c := by
     have h : ℓ + c - k = (ℓ - k) + c := by
-      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
-        (Nat.add_sub_assoc (m := ℓ) (k := k) hk.le c)
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using (Nat.add_sub_assoc hk.le c)
     simpa [h] using (pow_add f (ℓ - k) c)
   have hP_factor (j : ℕ) :
       hasseDerivOp F k (f ^ ℓ * (rj j + sj j * f ^ c)) =

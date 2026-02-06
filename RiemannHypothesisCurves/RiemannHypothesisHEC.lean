@@ -4,11 +4,9 @@ import RiemannHypothesisCurves.Utils
 noncomputable def hyperellipticCurve (F : Type*) [Field F] (f : Polynomial F) : Set (F × F) :=
   {p | p.2 ^ 2 = Polynomial.eval p.1 f}
 
-lemma hasse_vanishing_card_bound (F : Type*) [Field F] [DecidableEq F]
-    (r : Polynomial F) (ℓ : ℕ) (S : Finset F) (hr : r ≠ 0) (hℓ_pos : 0 < ℓ)
-    (hvan : ∀ x ∈ S, ∀ k < ℓ, (hasseDerivOp F k r).eval x = 0) :
-    (S.card : ℝ) ≤ (r.natDegree : ℝ) / ℓ :=
-by
+lemma hasse_vanishing_card_bound (F : Type*) [Field F] [DecidableEq F] (r : Polynomial F) (ℓ : ℕ) (S : Finset F)
+    (hr : r ≠ 0) (hℓ_pos : 0 < ℓ) (hvan : ∀ x ∈ S, ∀ k < ℓ, (hasseDerivOp F k r).eval x = 0) :
+    (S.card : ℝ) ≤ (r.natDegree : ℝ) / ℓ := by
   let s : F → Polynomial F := fun x => (Polynomial.X - Polynomial.C x) ^ ℓ
   have hpair_all : Pairwise fun x y : F => IsCoprime (s x) (s y) := by
     have hlin :
@@ -59,57 +57,48 @@ by
 lemma ceil_sqrt_le_div_three (q : ℕ) (hq : 15 ≤ q) : Nat.ceil (Real.sqrt q) ≤ q / 3 :=
 by
   set k : ℕ := q / 3 with hk
-  have hk_ge5 : 5 ≤ k := by
-    have : 5 * 3 ≤ q := by simpa using hq
-    simpa [hk] using (Nat.le_div_iff_mul_le (by decide : 0 < 3)).2 this
-  have hq_le_2plus3k : q ≤ 2 + 3 * k := by
-    have hmod : q % 3 ≤ 2 :=
-      Nat.lt_succ_iff.mp (Nat.mod_lt q (by decide : 0 < 3))
-    have h : q % 3 + k * 3 ≤ 2 + k * 3 := Nat.add_le_add_right hmod _
-    simpa [hk, Nat.mod_add_div, Nat.mul_comm] using h
-  have h2plus3k_le_kk : 2 + 3 * k ≤ k * k := by
-    have h2_le_k : 2 ≤ k := (by decide : 2 ≤ 5).trans hk_ge5
-    have h4_le_k : 4 ≤ k := (by decide : 4 ≤ 5).trans hk_ge5
-    calc
-      2 + 3 * k ≤ k + 3 * k := Nat.add_le_add_right h2_le_k _
-      _ = 4 * k := by ring_nf
-      _ ≤ k * k := by
-        simpa [Nat.mul_comm] using Nat.mul_le_mul_left k h4_le_k
-  have h_sqrt_le : Real.sqrt (q : ℝ) ≤ k := by
-    refine (Real.sqrt_le_iff).2 ?_
-    refine ⟨?_, ?_⟩
-    · exact_mod_cast (Nat.zero_le k)
-    · have : (q : ℝ) ≤ (k : ℝ) * k := by
-        exact_mod_cast (hq_le_2plus3k.trans h2plus3k_le_kk)
-      simpa [pow_two] using this
-  have : Nat.ceil (Real.sqrt (q : ℝ)) ≤ k := Nat.ceil_le.2 h_sqrt_le
+  have hqR : (15 : ℝ) ≤ (q : ℝ) := by exact_mod_cast hq
+  have hq_le : q ≤ 3 * k + 2 := by
+    have hmod : q % 3 ≤ 2 := Nat.lt_succ_iff.mp (Nat.mod_lt q (by decide : 0 < 3))
+    have hdecomp : 3 * k + q % 3 = q := by
+      simpa [hk, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm, Nat.add_comm, Nat.add_left_comm,
+        Nat.add_assoc] using (Nat.div_add_mod q 3)
+    have : 3 * k + q % 3 ≤ 3 * k + 2 := Nat.add_le_add_left hmod _
+    simpa [hdecomp] using this
+  have hk_le : (q : ℝ) / 3 - 1 ≤ (k : ℝ) := by
+    have hq_leR : (q : ℝ) ≤ (3 : ℝ) * (k : ℝ) + 2 := by exact_mod_cast hq_le
+    nlinarith [hq_leR]
+  have hq_le_k2 : (q : ℝ) ≤ (k : ℝ) ^ 2 := by
+    have hq_le_tmp : (q : ℝ) ≤ ((q : ℝ) / 3 - 1) ^ 2 := by nlinarith [hqR]
+    have htmp_nonneg : 0 ≤ (q : ℝ) / 3 - 1 := by nlinarith [hqR]
+    have hs : ((q : ℝ) / 3 - 1) ^ 2 ≤ (k : ℝ) ^ 2 := by
+      simpa [pow_two] using mul_self_le_mul_self htmp_nonneg hk_le
+    exact hq_le_tmp.trans hs
+  have hsqrt_le : Real.sqrt (q : ℝ) ≤ (k : ℝ) := by
+    refine (Real.sqrt_le_iff).2 ⟨by exact_mod_cast (Nat.zero_le k), ?_⟩
+    simpa [pow_two] using hq_le_k2
+  have : Nat.ceil (Real.sqrt (q : ℝ)) ≤ k := Nat.ceil_le.2 hsqrt_le
   simpa [hk] using this
 
-lemma riemann_hypothesis_stepanov_bound (F : Type*) [Field F] [Fintype F] [DecidableEq F]
-    (hF : ringChar F ≠ 2) (f : Polynomial F) (q : ℕ) (a : F) (hq : q = Fintype.card F)
-    (hm3 : 3 ≤ f.natDegree)
-    (hnsq : ¬ ∃ g : Polynomial (AlgebraicClosure F),
-        g * g = Polynomial.map (algebraMap F (AlgebraicClosure F)) f)
-    (hq6m : q > 6 * f.natDegree)
-    [DecidablePred (fun x : F => x ∈ S_a F f ((q - 1) / 2) a)] :
+lemma riemann_hypothesis_stepanov_bound (F : Type*) [Field F] [Fintype F] [DecidableEq F] (hF : ringChar F ≠ 2)
+    (f : Polynomial F) (q : ℕ) (a : F) (hq : q = Fintype.card F) (hm3 : 3 ≤ f.natDegree)
+    (hnsq : ¬ ∃ g : Polynomial (AlgebraicClosure F), g * g = Polynomial.map (algebraMap F (AlgebraicClosure F)) f)
+    (hq6m : q > 6 * f.natDegree) [DecidablePred (fun x : F => x ∈ S_a F f ((q - 1) / 2) a)] :
     (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} : ℝ) <
-      (q : ℝ) / 2 + 2 * (f.natDegree : ℝ) * (Nat.ceil (Real.sqrt q) : ℝ) :=
-by
+      (q : ℝ) / 2 + 2 * (f.natDegree : ℝ) * (Nat.ceil (Real.sqrt q) : ℝ) := by
   set m : ℕ := f.natDegree with hm_def
   have h18_lt_q : 18 < q := by
-    have : 18 ≤ 6 * m := by
-      have : 3 ≤ m := by simpa [hm_def] using hm3
-      have := Nat.mul_le_mul_left 6 this
-      simpa using this
-    exact lt_of_le_of_lt this (by simpa [hm_def] using hq6m)
+    have h18_le_6m : 18 ≤ 6 * m := by
+      have hm3' : 3 ≤ m := by simpa [hm_def] using hm3
+      simpa using Nat.mul_le_mul_left 6 hm3'
+    exact lt_of_le_of_lt h18_le_6m (by simpa [hm_def] using hq6m)
   have h15_le_q : (15 : ℕ) ≤ q :=
     le_trans (by decide : (15 : ℕ) ≤ 19) (Nat.succ_le_of_lt h18_lt_q)
   have hq_pos_nat : 0 < q := lt_trans (by decide : 0 < 18) h18_lt_q
   set ℓ : ℕ := Nat.ceil (Real.sqrt q) with hℓ_def
   have hℓ_le_q_div3 : ℓ ≤ q / 3 := by
     simpa [ℓ, hℓ_def] using ceil_sqrt_le_div_three q h15_le_q
-  have h_sqrt_le_ℓ : Real.sqrt q ≤ (ℓ : ℝ) := by
-    simpa [ℓ, hℓ_def] using (Nat.le_ceil (Real.sqrt q))
+  have h_sqrt_le_ℓ : Real.sqrt q ≤ (ℓ : ℝ) := by simpa [ℓ, hℓ_def] using Nat.le_ceil (Real.sqrt q)
   have hℓ_pos_real : 0 < (ℓ : ℝ) :=
     lt_of_lt_of_le (Real.sqrt_pos.mpr (by exact_mod_cast hq_pos_nat)) h_sqrt_le_ℓ
   have hℓ_pos : 0 < ℓ := by exact_mod_cast hℓ_pos_real
@@ -117,59 +106,46 @@ by
     stepanov_polynomial (F := F) (hF := hF) (f := f) (q := q) (ℓ := ℓ) (a := a)
       hq hm3 hnsq hq6m hℓ_pos hℓ_le_q_div3
   set Sfin : Finset F :=
-    Finset.univ.filter (fun x : F => x ∈ S_a F f ((q - 1) / 2) a) with hSfin_def
+      Finset.univ.filter (fun x : F => x ∈ S_a F f ((q - 1) / 2) a)
   have hvan_S : ∀ x ∈ Sfin, ∀ k < ℓ, (hasseDerivOp F k R).eval x = 0 := by
     intro x hx k hk
     rcases Finset.mem_filter.mp hx with ⟨_, hx_sa⟩
     exact hvan x hx_sa k hk
-  have h_card_Sfin_le :
-      (Sfin.card : ℝ) ≤ (R.natDegree : ℝ) / (ℓ : ℝ) :=
-    hasse_vanishing_card_bound (F := F) (r := R) (ℓ := ℓ) (S := Sfin)
-      hR_ne hℓ_pos hvan_S
-  have h_card_subtype_eq :
-      (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} : ℝ)
-        = (Sfin.card : ℝ) := by
-    exact_mod_cast (by simpa [Sfin] :
-      Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} = Sfin.card)
   have h_card_le :
-      (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} : ℝ)
-        ≤ (R.natDegree : ℝ) / (ℓ : ℝ) := by
+      (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} : ℝ) ≤ (R.natDegree : ℝ) / (ℓ : ℝ) := by
+    have h_card_Sfin_le :
+        (Sfin.card : ℝ) ≤ (R.natDegree : ℝ) / (ℓ : ℝ) :=
+      hasse_vanishing_card_bound (F := F) (r := R) (ℓ := ℓ) (S := Sfin) hR_ne hℓ_pos hvan_S
+    have h_card_subtype_eq :
+        (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} : ℝ) = (Sfin.card : ℝ) := by
+      exact_mod_cast (by simpa [Sfin] :
+        Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} = Sfin.card)
     simpa [h_card_subtype_eq] using h_card_Sfin_le
   have hdegR' :
-      (R.natDegree : ℝ)
-        < (m : ℝ) * (q : ℝ)
-          + (ℓ : ℝ) * (q : ℝ) / 2
-          + (ℓ : ℝ) ^ 2 * (m : ℝ) := by
+      (R.natDegree : ℝ) < (m : ℝ) * (q : ℝ) + (ℓ : ℝ) * (q : ℝ) / 2 + (ℓ : ℝ) ^ 2 * (m : ℝ) := by
     simpa [m, hm_def, pow_two, mul_assoc, mul_left_comm, mul_comm] using hdegR
   have hdegR_upper :
-      (R.natDegree : ℝ)
-        < (ℓ : ℝ) * (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) ^ 2 := by
+      (R.natDegree : ℝ) < (ℓ : ℝ) * (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) ^ 2 := by
     have hq_le_ℓsq : (q : ℝ) ≤ (ℓ : ℝ) ^ 2 := by
-      have h :=
-        mul_self_le_mul_self (Real.sqrt_nonneg (q : ℝ)) h_sqrt_le_ℓ
+      have h := mul_self_le_mul_self (Real.sqrt_nonneg (q : ℝ)) h_sqrt_le_ℓ
       simpa [pow_two,
-        Real.mul_self_sqrt (by
-          exact_mod_cast (Nat.zero_le q) : (0 : ℝ) ≤ (q : ℝ))] using h
+        Real.mul_self_sqrt (by exact_mod_cast (Nat.zero_le q) : (0 : ℝ) ≤ (q : ℝ))] using h
     have hmq : (m : ℝ) * (q : ℝ) ≤ (m : ℝ) * (ℓ : ℝ) ^ 2 := by
-      have hm_nonneg : (0 : ℝ) ≤ (m : ℝ) := by exact_mod_cast (Nat.zero_le m)
+      have hm_nonneg : (0 : ℝ) ≤ (m : ℝ) := by exact_mod_cast Nat.zero_le m
       exact mul_le_mul_of_nonneg_left hq_le_ℓsq hm_nonneg
     nlinarith [hdegR', hmq]
   have hdeg_div_main :
-      (R.natDegree : ℝ) / (ℓ : ℝ)
-        < (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) := by
+      (R.natDegree : ℝ) / (ℓ : ℝ) < (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) := by
     have hℓ_ne : (ℓ : ℝ) ≠ 0 := ne_of_gt hℓ_pos_real
-    have hdiv :=
-      (div_lt_div_of_pos_right hdegR_upper hℓ_pos_real)
+    have hdiv := div_lt_div_of_pos_right hdegR_upper hℓ_pos_real
     have hsimp :
         ((ℓ : ℝ) * (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) ^ 2) / (ℓ : ℝ)
-          = (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) := by
-      field_simp [hℓ_ne]
+          = (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) := by field_simp [hℓ_ne]
     simpa [hsimp] using hdiv
-  have :
-      (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} : ℝ)
-        < (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) :=
+  have hmain :
+      (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} : ℝ) < (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) :=
     lt_of_le_of_lt h_card_le hdeg_div_main
-  simpa [m, hm_def, ℓ, hℓ_def] using this
+  simpa [m, hm_def, ℓ, hℓ_def] using hmain
 
 lemma riemann_hypothesis_upper_bound (F : Type*) [Field F] [Fintype F] [DecidableEq F]
     (hF : ringChar F ≠ 2) (f : Polynomial F) (q : ℕ) (hq : q = Fintype.card F)
@@ -468,4 +444,3 @@ by
               (f.natDegree : ℝ) * Real.sqrt q := by
           nlinarith [hm_pos, h_sqrt_gt_4]
         _ = 5 * (f.natDegree : ℝ) * Real.sqrt q := by ring
-#print axioms riemann_hypothesis_hec
