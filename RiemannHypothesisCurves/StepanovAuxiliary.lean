@@ -81,26 +81,12 @@ by
       (Polynomial.natDegree_le_iff_degree_le).1 hr
     have hdeg_sj_le_d : Polynomial.degree sj ≤ (d : WithBot ℕ) :=
       (Polynomial.natDegree_le_iff_degree_le).1 hs
-    let Ftrunc : WithBot ℕ → WithBot ℕ :=
-      fun x => match x with | ⊥ => ⊥ | some n => some (n - k)
-    have hF_mono :
-        ∀ {x y : WithBot ℕ}, x ≤ y → Ftrunc x ≤ Ftrunc y := by
+    let Ftrunc : WithBot ℕ → WithBot ℕ := fun x => match x with | ⊥ => ⊥ | some n => some (n - k)
+    have hF_mono : Monotone Ftrunc := by
       intro x y hxy
-      cases x using WithBot.recBotCoe with
-      | bot =>
-          cases y using WithBot.recBotCoe with
-          | bot => simp [Ftrunc]
-          | coe _ => simp [Ftrunc]
-      | coe a =>
-          cases y using WithBot.recBotCoe with
-          | bot =>
-              have hxbot : ((a : ℕ) : WithBot ℕ) = (⊥ : WithBot ℕ) :=
-                (le_bot_iff).1 hxy
-              exact (WithBot.natCast_ne_bot (α := ℕ) a) hxbot |> False.elim
-          | coe b =>
-              have hab : a ≤ b := (WithBot.coe_le_coe).1 hxy
-              have hsub : a - k ≤ b - k := Nat.sub_le_sub_right hab k
-              exact (WithBot.coe_le_coe).2 hsub
+      cases x using WithBot.recBotCoe <;> cases y using WithBot.recBotCoe <;>
+        simp [Ftrunc] at hxy ⊢
+      exact WithBot.coe_le_coe.2 (Nat.sub_le_sub_right hxy k)
     let x_rj : WithBot ℕ :=
       Polynomial.degree rj + (k : WithBot ℕ) * Polynomial.degree f
     let x_sj : WithBot ℕ :=
@@ -294,162 +280,80 @@ lemma stepanov_form (F : Type*) [Field F] [Fintype F]
         Finset.sum (Finset.range J)
           (fun j => ((rjk j) + (sjk j) * f^c) * (Polynomial.X)^(j*q)) :=
 by
+  classical
   have h_ex :
       ∀ j : ℕ, ∃ rjk_j sjk_j : Polynomial F,
-        hasseDerivOp F k (f^ℓ * (rj j)) = rjk_j * f^(ℓ - k) ∧
-        hasseDerivOp F k (f^(ℓ + c) * (sj j)) = sjk_j * f^(ℓ + c - k) := by
+        hasseDerivOp F k (f ^ ℓ * rj j) = rjk_j * f ^ (ℓ - k) ∧
+        hasseDerivOp F k (f ^ (ℓ + c) * sj j) = sjk_j * f ^ (ℓ + c - k) := by
     intro j
     let d := Nat.max (rj j).natDegree (sj j).natDegree
     have hr : (rj j).natDegree ≤ d := Nat.le_max_left _ _
     have hs : (sj j).natDegree ≤ d := Nat.le_max_right _ _
-    obtain ⟨rjk_j, sjk_j, hr_eq, hs_eq, -, -⟩ :=
-      auxiliary_derivatives (F := F) f f.natDegree d ℓ c rfl (rj j) (sj j) hr hs k hk.le
+    rcases
+        auxiliary_derivatives (F := F) (f := f) (m := f.natDegree) (d := d) (ℓ := ℓ) (c := c)
+          (hfdeg := rfl) (rj := rj j) (sj := sj j) hr hs k hk.le with
+      ⟨rjk_j, sjk_j, hr_eq, hs_eq, -, -⟩
     exact ⟨rjk_j, sjk_j, hr_eq, hs_eq⟩
   choose rjk sjk hrjk hsjk using h_ex
   refine ⟨rjk, sjk, hrjk, hsjk, ?_⟩
-  have h_rewrite :
-      f^ℓ *
-        Finset.sum (Finset.range J)
-          (fun j => ((rj j) + (sj j) * f^c) * (Polynomial.X)^(j*q)) =
-      Finset.sum (Finset.range J)
-        (fun j => (f^ℓ * ((rj j) + (sj j) * f^c)) * (Polynomial.X)^(j*q)) := by
-    have h :=
-      (Finset.mul_sum
-        (s := Finset.range J)
-        (f := fun j => ((rj j) + (sj j) * f^c) * (Polynomial.X)^(j*q))
-        (a := f^ℓ))
-    simpa [mul_comm, mul_left_comm, mul_assoc] using h
-  have h_deriv_sum :
-      hasseDerivOp F k
-        (f^ℓ *
-          Finset.sum (Finset.range J)
-            (fun j => ((rj j) + (sj j) * f^c) * (Polynomial.X)^(j*q))) =
-      Finset.sum (Finset.range J)
-        (fun j =>
-          hasseDerivOp F k
-            ((f^ℓ * ((rj j) + (sj j) * f^c)) * (Polynomial.X)^(j*q))) := by
-    simp [hasseDerivOp, h_rewrite, _root_.map_sum]
-  have h_term :
-      ∀ j : ℕ,
-        hasseDerivOp F k
-          ((f^ℓ * ((rj j) + (sj j) * f^c)) * (Polynomial.X)^(j*q)) =
-        f^(ℓ - k) * ((rjk j) + (sjk j) * f^c) * (Polynomial.X)^(j*q) := by
-    intro j
-    have h_split :
-        f^ℓ * ((rj j) + (sj j) * f^c) =
-          f^ℓ * (rj j) + f^(ℓ + c) * (sj j) := by
-      simp [mul_add, pow_add, mul_comm, mul_left_comm]
-    have hP_factor :
-        hasseDerivOp F k (f^ℓ * ((rj j) + (sj j) * f^c)) =
-          f^(ℓ - k) * ((rjk j) + (sjk j) * f^c) := by
-      have h_add' :
-          hasseDerivOp F k (f^ℓ * ((rj j) + (sj j) * f^c)) =
-            hasseDerivOp F k (f^ℓ * (rj j)) +
-              hasseDerivOp F k (f^(ℓ + c) * (sj j)) := by
-        simp [hasseDerivOp, h_split]
-      have h_basic :
-          hasseDerivOp F k (f^ℓ * (rj j)) +
-              hasseDerivOp F k (f^(ℓ + c) * (sj j)) =
-            (rjk j) * f^(ℓ - k) + (sjk j) * f^(ℓ + c - k) := by
-        simp [hrjk j, hsjk j]
-      have h_tmp :
-          hasseDerivOp F k (f^ℓ * ((rj j) + (sj j) * f^c)) =
-            (rjk j) * f^(ℓ - k) + (sjk j) * f^(ℓ + c - k) :=
-        h_add'.trans h_basic
-      have h_exp : ℓ + c - k = c + (ℓ - k) := by
-        have hℓ : ℓ = (ℓ - k) + k := (Nat.sub_add_cancel hk.le).symm
-        have h_step : ℓ + c - k = ((ℓ - k) + k) + c - k := by
-          have := congrArg (fun n => n + c - k) hℓ
-          simpa using this
-        have h' : ((ℓ - k) + k) + c - k = (ℓ - k) + c := by
-          have htemp : ((ℓ - k) + k) + c = ((ℓ - k) + c) + k := by
-            calc
-              ((ℓ - k) + k) + c
-                  = (ℓ - k) + (k + c) := by
-                        simp [Nat.add_assoc]
-              _ = (ℓ - k) + (c + k) := by
-                        simp [Nat.add_comm]
-              _ = ((ℓ - k) + c) + k := by
-                        simp [Nat.add_assoc]
-          calc
-            ((ℓ - k) + k) + c - k
-                = ((ℓ - k) + c) + k - k := by
-                      simp [htemp]
-            _ = (ℓ - k) + c := by
-                      simp
-        have h1 : ℓ + c - k = (ℓ - k) + c := h_step.trans h'
-        have h2 : (ℓ - k) + c = c + (ℓ - k) := Nat.add_comm _ _
-        exact h1.trans h2
-      have hpow : f^(ℓ + c - k) = f^c * f^(ℓ - k) := by
-        have hpow' := congrArg (fun n => f^n) h_exp
-        simpa [pow_add] using hpow'
-      calc
-        hasseDerivOp F k (f^ℓ * ((rj j) + (sj j) * f^c)) =
-            (rjk j) * f^(ℓ - k) + (sjk j) * f^(ℓ + c - k) := h_tmp
-        _ = (rjk j) * f^(ℓ - k) + (sjk j) * (f^c * f^(ℓ - k)) := by
-              exact congrArg
-                (fun t => (rjk j) * f^(ℓ - k) + (sjk j) * t) hpow
-        _ = rjk j * f^(ℓ - k) + sjk j * f^c * f^(ℓ - k) := by
-              simp [mul_assoc]
-        _ = (rjk j + sjk j * f^c) * f^(ℓ - k) := by
-              simp [add_mul, mul_assoc]
-        _ = f^(ℓ - k) * (rjk j + sjk j * f^c) := by
-              ac_rfl
-    have h_prod :=
-      hasseDerivOp_mul_Xqpow (F := F) (q := q) (k := k)
-        (hq := hq) (hkq := hkq)
-        (P := f^ℓ * ((rj j) + (sj j) * f^c)) (j := j)
+  have h_exp : ℓ + c - k = (ℓ - k) + c := by
     calc
-      hasseDerivOp F k
-          ((f^ℓ * ((rj j) + (sj j) * f^c)) * (Polynomial.X)^(j*q)) =
-          hasseDerivOp F k (f^ℓ * ((rj j) + (sj j) * f^c)) *
-            (Polynomial.X)^(j*q) := by
-            simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using h_prod
-      _ = f^(ℓ - k) * (rjk j + sjk j * f^c) * (Polynomial.X)^(j*q) := by
-            simp [hP_factor]
-      _ = f^(ℓ - k) * ((rjk j) + (sjk j) * f^c) * (Polynomial.X)^(j*q) := by
-            ac_rfl
-  have h_deriv_explicit :
-      hasseDerivOp F k
-        (f^ℓ *
-          Finset.sum (Finset.range J)
-            (fun j => ((rj j) + (sj j) * f^c) * (Polynomial.X)^(j*q))) =
-      Finset.sum (Finset.range J)
-        (fun j =>
-          f^(ℓ - k) * ((rjk j) + (sjk j) * f^c) * (Polynomial.X)^(j*q)) := by
-    simpa [h_term] using h_deriv_sum
-  have h_factor :
-      Finset.sum (Finset.range J)
-        (fun j =>
-          f^(ℓ - k) * ((rjk j) + (sjk j) * f^c) * (Polynomial.X)^(j*q)) =
-      f^(ℓ - k) *
-        Finset.sum (Finset.range J)
-          (fun j => ((rjk j) + (sjk j) * f^c) * (Polynomial.X)^(j*q)) := by
-    have h1 :
-        Finset.sum (Finset.range J)
-          (fun j =>
-            f^(ℓ - k) * ((rjk j) + (sjk j) * f^c) * (Polynomial.X)^(j*q)) =
-        Finset.sum (Finset.range J)
-          (fun j =>
-            f^(ℓ - k) * (((rjk j) + (sjk j) * f^c) * (Polynomial.X)^(j*q))) := by
-      refine Finset.sum_congr rfl ?_
-      intro j _
-      simp [mul_assoc]
-    have h_mul_sum :=
-      (Finset.mul_sum
-        (s := Finset.range J)
-        (f :=
-          fun j => ((rjk j) + (sjk j) * f^c) * (Polynomial.X)^(j*q))
-        (a := f^(ℓ - k)))
+      ℓ + c - k = c + ℓ - k := by ac_rfl
+      _ = c + (ℓ - k) := by
+            simpa using (Nat.add_sub_assoc (m := ℓ) (k := k) hk.le c)
+      _ = (ℓ - k) + c := by ac_rfl
+  have hpow : f ^ (ℓ + c - k) = f ^ (ℓ - k) * f ^ c := by
+    simp [h_exp, pow_add]
+  have hP_factor (j : ℕ) :
+      hasseDerivOp F k (f ^ ℓ * (rj j + sj j * f ^ c)) =
+        f ^ (ℓ - k) * (rjk j + sjk j * f ^ c) := by
     calc
-      Finset.sum (Finset.range J)
-          (fun j =>
-            f^(ℓ - k) * ((rjk j) + (sjk j) * f^c) * (Polynomial.X)^(j*q)) =
+      hasseDerivOp F k (f ^ ℓ * (rj j + sj j * f ^ c))
+          = hasseDerivOp F k (f ^ ℓ * rj j + f ^ (ℓ + c) * sj j) := by
+              simp [mul_add, pow_add, mul_left_comm, mul_comm]
+      _ = hasseDerivOp F k (f ^ ℓ * rj j) + hasseDerivOp F k (f ^ (ℓ + c) * sj j) := by
+              simp [hasseDerivOp]
+      _ = rjk j * f ^ (ℓ - k) + sjk j * f ^ (ℓ + c - k) := by
+              simp [hrjk j, hsjk j]
+      _ = f ^ (ℓ - k) * (rjk j + sjk j * f ^ c) := by
+              -- move powers into the desired normal form
+              calc
+                rjk j * f ^ (ℓ - k) + sjk j * f ^ (ℓ + c - k)
+                    = f ^ (ℓ - k) * rjk j + f ^ (ℓ - k) * (sjk j * f ^ c) := by
+                        simp [hpow, mul_assoc, mul_comm]
+                _ = f ^ (ℓ - k) * (rjk j + sjk j * f ^ c) := by
+                        simp [mul_add]
+  -- push `hasseDerivOp` through the outer sum and use the `X^(j*q)` lemma termwise
+  have h_sum_rewrite :
+      f ^ ℓ *
+          (Finset.sum (Finset.range J)
+            (fun j => (rj j + sj j * f ^ c) * Polynomial.X ^ (j * q))) =
+        Finset.sum (Finset.range J)
+          (fun j => (f ^ ℓ * (rj j + sj j * f ^ c)) * Polynomial.X ^ (j * q)) := by
+    simp [Finset.mul_sum, mul_assoc, mul_comm]
+  calc
+    hasseDerivOp F k
+        (f ^ ℓ *
           Finset.sum (Finset.range J)
-            (fun j =>
-              f^(ℓ - k) * (((rjk j) + (sjk j) * f^c) * (Polynomial.X)^(j*q))) := h1
-      _ = f^(ℓ - k) *
-            Finset.sum (Finset.range J)
-              (fun j => ((rjk j) + (sjk j) * f^c) * (Polynomial.X)^(j*q)) := by
-            simpa using h_mul_sum.symm
-  exact h_deriv_explicit.trans h_factor
+            (fun j => (rj j + sj j * f ^ c) * Polynomial.X ^ (j * q)))
+        =
+        Finset.sum (Finset.range J)
+          (fun j =>
+            hasseDerivOp F k ((f ^ ℓ * (rj j + sj j * f ^ c)) * Polynomial.X ^ (j * q))) := by
+          simp [hasseDerivOp, h_sum_rewrite, _root_.map_sum]
+    _ =
+        Finset.sum (Finset.range J)
+          (fun j =>
+            (f ^ (ℓ - k) * (rjk j + sjk j * f ^ c)) * Polynomial.X ^ (j * q)) := by
+          refine Finset.sum_congr rfl ?_
+          intro j hj
+          have hX :=
+            hasseDerivOp_mul_Xqpow (F := F) (q := q) (k := k) (hq := hq) (hkq := hkq)
+              (P := f ^ ℓ * (rj j + sj j * f ^ c)) (j := j)
+          simpa [hP_factor j, mul_assoc] using hX
+    _ =
+        f ^ (ℓ - k) *
+          Finset.sum (Finset.range J)
+            (fun j => (rjk j + sjk j * f ^ c) * Polynomial.X ^ (j * q)) := by
+          -- factor out the common left multiplier `f^(ℓ-k)`
+          simp [Finset.mul_sum, mul_assoc, mul_left_comm, mul_comm]

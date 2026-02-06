@@ -1,7 +1,7 @@
 import Mathlib
 
 noncomputable def hasseDerivOp (F : Type*) [Field F] (k : ℕ) : Polynomial F → Polynomial F :=
-  fun p => (Polynomial.hasseDeriv k) p
+  Polynomial.hasseDeriv k
 
 lemma sum_hasseDeriv_piAntidiag_eq_sum_fin
     (F : Type*) [Field F] (k r : ℕ) (f : Fin r → Polynomial F) :

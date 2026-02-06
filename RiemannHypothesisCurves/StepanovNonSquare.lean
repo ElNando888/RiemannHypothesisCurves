@@ -114,126 +114,59 @@ lemma coefficient_transformation_shift (F : Type*) [Field F]
             (Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * A j) *
           Polynomial.X ^ (k * q) :=
 by
-  let B : ℕ → ℕ → Polynomial F :=
-    fun j k =>
-      ((Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * A j) *
-        Polynomial.X ^ (k * q)
-  have hL :
+  classical
+  let B : ℕ → ℕ → Polynomial F := fun j k =>
+    ((Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * A j) * Polynomial.X ^ (k * q)
+  have h_expand :
       ∑ j ∈ Finset.range J, A j * (Polynomial.X ^ q + Polynomial.C a) ^ j =
         ∑ j ∈ Finset.range J, ∑ k ∈ Finset.range (j + 1), B j k := by
     refine Finset.sum_congr rfl ?_
     intro j hj
-    simp [B, add_pow, Polynomial.smul_eq_C_mul, Finset.mul_sum,
-      mul_comm, mul_left_comm, pow_mul]
-  have hL2 :
-      ∑ j ∈ Finset.range J, ∑ k ∈ Finset.range (j + 1), B j k =
-        ∑ j ∈ Finset.range J, ∑ k ∈ Finset.range J,
-          (if k ≤ j then B j k else 0) := by
-    refine Finset.sum_congr rfl ?_
-    intro j hj
-    have hj_lt : j < J := Finset.mem_range.mp hj
-    have h_range :
-        Finset.range (j + 1) =
-          (Finset.range J).filter (fun k => k ≤ j) := by
-      apply Finset.ext
-      intro k; constructor
-      · intro hk
-        have hk_lt : k < j + 1 := Finset.mem_range.mp hk
-        have hk_le_j : k ≤ j := Nat.lt_succ_iff.mp hk_lt
-        have hk_lt_J : k < J := lt_of_le_of_lt hk_le_j hj_lt
-        exact
-          (Finset.mem_filter).mpr
-            ⟨Finset.mem_range.mpr hk_lt_J, hk_le_j⟩
-      · intro hk
-        rcases Finset.mem_filter.mp hk with ⟨_, hk_le_j⟩
-        exact Finset.mem_range.mpr (Nat.lt_succ_of_le hk_le_j)
-    calc
-      ∑ k ∈ Finset.range (j + 1), B j k
-          = ∑ k ∈ (Finset.range J).filter (fun k => k ≤ j), B j k := by
-              simp [h_range]
-      _ = ∑ k ∈ Finset.range J,
-              (if k ≤ j then B j k else 0) := by
-            simp [Finset.sum_filter]
-  have h_swap :
-      ∑ j ∈ Finset.range J, ∑ k ∈ Finset.range J,
-          (if k ≤ j then B j k else 0) =
-        ∑ k ∈ Finset.range J, ∑ j ∈ Finset.range J,
-          (if k ≤ j then B j k else 0) := by
-    let s := Finset.range J
-    let t := Finset.range J
-    have h1 :=
-      (Finset.sum_product' (s := s) (t := t)
-        (f := fun j k => (if k ≤ j then B j k else 0)))
-    have h2 :=
-      (Finset.sum_product_right' (s := s) (t := t)
-        (f := fun j k => (if k ≤ j then B j k else 0)))
-    calc
-      ∑ j ∈ s, ∑ k ∈ t, (if k ≤ j then B j k else 0)
-          = (Finset.instSProd.sprod s t).sum
-              (fun x => if x.2 ≤ x.1 then B x.1 x.2 else 0) := by
-            simpa [s, t] using h1.symm
-      _ = ∑ k ∈ t, ∑ j ∈ s, (if k ≤ j then B j k else 0) := by
-            simpa [s, t] using h2
-  have h_inner2 :
-      ∀ k : ℕ,
-        ∑ j ∈ Finset.range J, (if k ≤ j then B j k else 0) =
-          ∑ j ∈ Finset.Ico k J, B j k := by
-    intro k
-    have hfilter :
-        ∑ j ∈ Finset.range J, (if k ≤ j then B j k else 0) =
-          ∑ j ∈ (Finset.range J).filter (fun j => k ≤ j), B j k := by
-      simp [Finset.sum_filter]
-    have h_Ico :
-        (Finset.range J).filter (fun j => k ≤ j) = Finset.Ico k J := by
-      ext j
-      simp [Finset.mem_filter, Finset.mem_Ico, Finset.mem_range, and_comm]
-    calc
-      ∑ j ∈ Finset.range J, (if k ≤ j then B j k else 0)
-          = ∑ j ∈ (Finset.range J).filter (fun j => k ≤ j), B j k := hfilter
-      _ = ∑ j ∈ Finset.Ico k J, B j k := by
-            simp [h_Ico]
-  have h_factor :
-      ∀ k : ℕ,
-        ∑ j ∈ Finset.Ico k J, B j k =
-          (∑ j ∈ Finset.Ico k J,
-              (Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * A j) *
-            Polynomial.X ^ (k * q) := by
-    intro k
-    calc
-      ∑ j ∈ Finset.Ico k J, B j k
-          = ∑ j ∈ Finset.Ico k J,
-              ((Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * A j) *
-                Polynomial.X ^ (k * q) := by
-            simp [B]
-      _ =
-          (∑ j ∈ Finset.Ico k J,
-              (Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * A j) *
-            Polynomial.X ^ (k * q) := by
-            simpa [mul_comm, mul_left_comm, mul_assoc] using
-              (Finset.sum_mul
-                (s := Finset.Ico k J)
-                (f :=
-                  fun j =>
-                    (Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * A j)
-                (a := Polynomial.X ^ (k * q))).symm
+    simp [B, add_pow, Polynomial.smul_eq_C_mul, Finset.mul_sum, pow_mul, mul_comm, mul_left_comm]
+  have h_range (j : ℕ) (hj : j < J) :
+      Finset.range (j + 1) = (Finset.range J).filter (fun k => k ≤ j) := by
+    ext k
+    constructor
+    · intro hk
+      have hk_le : k ≤ j := Nat.lt_succ_iff.mp (Finset.mem_range.mp hk)
+      have hk_ltJ : k < J := lt_of_le_of_lt hk_le hj
+      exact (Finset.mem_filter).2 ⟨Finset.mem_range.2 hk_ltJ, hk_le⟩
+    · intro hk
+      rcases (Finset.mem_filter.1 hk) with ⟨-, hk_le⟩
+      exact Finset.mem_range.2 (Nat.lt_succ_of_le hk_le)
+  have h_filter_Ico (k : ℕ) :
+      (Finset.range J).filter (fun j => k ≤ j) = Finset.Ico k J := by
+    ext j
+    simp [Finset.mem_filter, Finset.mem_Ico, Finset.mem_range, and_comm]
   calc
     ∑ j ∈ Finset.range J, A j * (Polynomial.X ^ q + Polynomial.C a) ^ j
-        = ∑ j ∈ Finset.range J, ∑ k ∈ Finset.range (j + 1), B j k := hL
-    _ = ∑ j ∈ Finset.range J, ∑ k ∈ Finset.range J,
-            (if k ≤ j then B j k else 0) := hL2
-    _ = ∑ k ∈ Finset.range J, ∑ j ∈ Finset.range J,
-            (if k ≤ j then B j k else 0) := h_swap
+        = ∑ j ∈ Finset.range J, ∑ k ∈ Finset.range (j + 1), B j k := h_expand
+    _ = ∑ j ∈ Finset.range J, ∑ k ∈ Finset.range J, if k ≤ j then B j k else 0 := by
+          refine Finset.sum_congr rfl ?_
+          intro j hj
+          have hj' : j < J := Finset.mem_range.1 hj
+          simp [h_range j hj', Finset.sum_filter]
+    _ = ∑ k ∈ Finset.range J, ∑ j ∈ Finset.range J, if k ≤ j then B j k else 0 := by
+          simpa using
+            (Finset.sum_comm :
+              (∑ j ∈ Finset.range J, ∑ k ∈ Finset.range J, if k ≤ j then B j k else 0) =
+                ∑ k ∈ Finset.range J, ∑ j ∈ Finset.range J, if k ≤ j then B j k else 0)
     _ = ∑ k ∈ Finset.range J, ∑ j ∈ Finset.Ico k J, B j k := by
           refine Finset.sum_congr rfl ?_
           intro k hk
-          exact h_inner2 k
+          simpa [h_filter_Ico k] using
+            (Finset.sum_filter (s := Finset.range J) (p := fun j => k ≤ j) (f := fun j => B j k)).symm
     _ = ∑ k ∈ Finset.range J,
-            (∑ j ∈ Finset.Ico k J,
-                (Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * A j) *
-              Polynomial.X ^ (k * q) := by
+          (∑ j ∈ Finset.Ico k J,
+              (Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * A j) *
+            Polynomial.X ^ (k * q) := by
           refine Finset.sum_congr rfl ?_
           intro k hk
-          simp [h_factor k]
+          simpa [B, mul_assoc, mul_left_comm, mul_comm] using
+            (Finset.sum_mul (s := Finset.Ico k J)
+              (f := fun j =>
+                (Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * A j)
+              (a := Polynomial.X ^ (k * q))).symm
 
 lemma triangular_inversion_shift (F : Type*) [Field F]
     (a : F) (J : ℕ) (A : ℕ → Polynomial F)
@@ -432,14 +365,8 @@ by
       lt_of_le_of_lt hdeg_diff_le
         (max_lt_iff.mpr ⟨hdeg_r2f_lt, hdeg_s2C_lt⟩)
   have hdiff_zero : r * r * f - s * s * Polynomial.C (f.eval 0) = 0 := by
-    by_contra hne
-    have hdeg_ge :
-        q ≤ (r * r * f - s * s * Polynomial.C (f.eval 0)).natDegree := by
-      have h :=
-        Polynomial.natDegree_le_of_dvd (p := (Polynomial.X ^ q : Polynomial F))
-          (q := r * r * f - s * s * Polynomial.C (f.eval 0)) hdiv_final hne
-      simpa using h
-    exact (not_lt_of_ge hdeg_ge hdeg_diff_lt)
+    refine Polynomial.eq_zero_of_dvd_of_natDegree_lt hdiv_final ?_
+    simpa [Polynomial.natDegree_X_pow] using hdeg_diff_lt
   exact sub_eq_zero.mp hdiff_zero
 
 lemma degree_bound_implies_two_mul_add_lt (q m n : ℕ) (hqm : m < q)
@@ -676,43 +603,10 @@ by
         ∑ j ∈ Finset.range J, sj' j * t ^ j
       have hsum_split :
           sum_total = sum_r + g ^ c * sum_s_base := by
+        classical
         unfold sum_total sum_r sum_s_base
-        calc
-          (∑ j ∈ Finset.range J,
-              ((rj' j) + (sj' j) * g ^ c) * t ^ j)
-              = ∑ j ∈ Finset.range J,
-                  (rj' j * t ^ j + (sj' j * g ^ c) * t ^ j) := by
-                    refine Finset.sum_congr rfl ?_
-                    intro j hj
-                    simp [add_mul]
-          _ = (∑ j ∈ Finset.range J, rj' j * t ^ j) +
-                ∑ j ∈ Finset.range J, (sj' j * g ^ c) * t ^ j := by
-                simpa [add_comm, add_left_comm, add_assoc] using
-                  (Finset.sum_add_distrib
-                    (s := Finset.range J)
-                    (f := fun j => rj' j * t ^ j)
-                    (g := fun j => (sj' j * g ^ c) * t ^ j))
-          _ = (∑ j ∈ Finset.range J, rj' j * t ^ j) +
-                g ^ c * ∑ j ∈ Finset.range J, sj' j * t ^ j := by
-                have h :
-                  ∑ j ∈ Finset.range J, (sj' j * g ^ c) * t ^ j =
-                    g ^ c * ∑ j ∈ Finset.range J, sj' j * t ^ j := by
-                  have h1 :
-                    (∑ j ∈ Finset.range J, (sj' j * g ^ c) * t ^ j) =
-                      ∑ j ∈ Finset.range J, g ^ c * (sj' j * t ^ j) := by
-                    refine Finset.sum_congr rfl ?_
-                    intro j hj
-                    ac_rfl
-                  have h2 :
-                    g ^ c * ∑ j ∈ Finset.range J, sj' j * t ^ j =
-                      ∑ j ∈ Finset.range J, g ^ c * (sj' j * t ^ j) := by
-                    exact
-                      Finset.mul_sum
-                        (s := Finset.range J)
-                        (f := fun j => sj' j * t ^ j)
-                        (a := g ^ c)
-                  exact h1.trans h2.symm
-                simp [h]
+        simp [Finset.mul_sum, Finset.sum_add_distrib, add_mul, mul_add, mul_assoc,
+          mul_left_comm, mul_comm]
       let R : ℕ → Polynomial F := fun k =>
         ∑ j ∈ Finset.Ico k J,
           (Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * rj' j
@@ -739,69 +633,10 @@ by
           sum_total =
             ∑ k ∈ Finset.range J,
               (R k + S k * g ^ c) * Polynomial.X ^ (k * q) := by
-        calc
-          sum_total = sum_r + g ^ c * sum_s_base := hsum_split
-          _ =
-              (∑ k ∈ Finset.range J,
-                  R k * Polynomial.X ^ (k * q)) +
-                g ^ c * sum_s_base := by
-                rw [hcoeff_r]
-          _ =
-              (∑ k ∈ Finset.range J,
-                  R k * Polynomial.X ^ (k * q)) +
-                g ^ c *
-                  (∑ k ∈ Finset.range J,
-                    S k * Polynomial.X ^ (k * q)) := by
-                rw [hcoeff_s_base]
-          _ =
-              (∑ k ∈ Finset.range J,
-                  R k * Polynomial.X ^ (k * q)) +
-                ∑ k ∈ Finset.range J,
-                  g ^ c * (S k * Polynomial.X ^ (k * q)) := by
-                have hmul :
-                    g ^ c *
-                        ∑ k ∈ Finset.range J,
-                          S k * Polynomial.X ^ (k * q) =
-                      ∑ k ∈ Finset.range J,
-                        g ^ c * (S k * Polynomial.X ^ (k * q)) := by
-                  exact
-                    Finset.mul_sum
-                      (s := Finset.range J)
-                      (f := fun k => S k * Polynomial.X ^ (k * q))
-                      (a := g ^ c)
-                have :=
-                  congrArg
-                    (fun p =>
-                      (∑ k ∈ Finset.range J,
-                          R k * Polynomial.X ^ (k * q)) + p)
-                    hmul
-                simpa using this
-          _ =
-              ∑ k ∈ Finset.range J,
-                (R k * Polynomial.X ^ (k * q) +
-                  g ^ c * (S k * Polynomial.X ^ (k * q))) := by
-                have :=
-                  Finset.sum_add_distrib
-                    (s := Finset.range J)
-                    (f := fun k => R k * Polynomial.X ^ (k * q))
-                    (g := fun k =>
-                      g ^ c * (S k * Polynomial.X ^ (k * q)))
-                simpa [add_comm, add_left_comm, add_assoc] using this.symm
-          _ =
-              ∑ k ∈ Finset.range J,
-                (R k + S k * g ^ c) * Polynomial.X ^ (k * q) := by
-                refine Finset.sum_congr rfl ?_
-                intro k hk
-                calc
-                  R k * Polynomial.X ^ (k * q) +
-                      g ^ c * (S k * Polynomial.X ^ (k * q)) =
-                      R k * Polynomial.X ^ (k * q) +
-                        (S k * g ^ c) * Polynomial.X ^ (k * q) := by
-                          ac_rfl
-                  _ =
-                      (R k + S k * g ^ c) *
-                        Polynomial.X ^ (k * q) := by
-                        rw [add_mul]
+        classical
+        -- straight-line `simp` after rewriting the three named sums
+        simp [hsum_split, hcoeff_r, hcoeff_s_base, Finset.mul_sum, Finset.sum_add_distrib,
+          add_mul, mul_add, mul_assoc, mul_left_comm, mul_comm]
       have hg3 :
           g ^ ℓ *
               Finset.sum (Finset.range J)

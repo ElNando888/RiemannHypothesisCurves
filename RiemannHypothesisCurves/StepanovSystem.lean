@@ -60,20 +60,10 @@ by
         ∑ k ∈ Finset.range ℓ, k * (m - 1) = (∑ k ∈ Finset.range ℓ, k) * (m - 1) := by
       simpa [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using
         (Finset.sum_mul (s := Finset.range ℓ) (f := fun k : ℕ => k) (a := m - 1)).symm
-    calc
-      ∑ k ∈ Finset.range ℓ, (J + d + k * (m - 1)) =
-          ∑ k ∈ Finset.range ℓ, ((J + d) + k * (m - 1)) := by
-            refine Finset.sum_congr rfl ?_
-            intro k hk
-            simp [add_assoc]
-      _ = (∑ k ∈ Finset.range ℓ, (J + d)) + ∑ k ∈ Finset.range ℓ, k * (m - 1) := by
-            simp [Finset.sum_add_distrib]
-      _ = ℓ * (J + d) + (∑ k ∈ Finset.range ℓ, k) * (m - 1) := by
-            simp [Finset.sum_const, Finset.card_range, h_lin]
-      _ = ℓ * (J + d) + (ℓ * (ℓ - 1) / 2) * (m - 1) := by
-            simp [Finset.sum_range_id]
-      _ = ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 := by
-            simp [Nat.mul_add, Nat.add_assoc, h_mul_div]
+    -- `simp` computes the sum and then expands the remaining products.
+    simp [Finset.sum_add_distrib, Finset.sum_const, Finset.card_range, h_lin, Finset.sum_range_id,
+      Nat.mul_add, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm, h_mul_div, Nat.mul_assoc,
+      Nat.mul_left_comm, Nat.mul_comm]
 
   have hB_nat : B ≤ ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 := by
     simpa [h_sum] using hB
@@ -134,9 +124,8 @@ by
         (ℓ : ℝ) * (J : ℝ) + (ℓ : ℝ) * (d : ℝ) +
             (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 <
           (ℓ : ℝ) * (J : ℝ) + (ℓ : ℝ) * (((q : ℝ) - (m : ℝ)) / 2) +
-            (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 :=
-      by
-        exact add_lt_add_right (add_lt_add_left hEd_lt _) _
+            (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 := by
+      linarith [hEd_lt]
     have h_target_eq :
         (ℓ : ℝ) * (J : ℝ) + (ℓ : ℝ) * (((q : ℝ) - (m : ℝ)) / 2) +
             (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 =
@@ -780,54 +769,37 @@ by
           Polynomial.C a *
             (hasseDerivOp F k (f ^ (ℓ + c) * (sjMap j v)) / f ^ (ℓ + c - k))
       have hsum_poly :
-          sigmaMap ⟨k, hk⟩ v =
-            ∑ j : Fin J,
-              p j * Polynomial.X ^ (j : ℕ) := by
+          sigmaMap ⟨k, hk⟩ v = ∑ j : Fin J, p j * Polynomial.X ^ (j : ℕ) := by
         simp [p, sigmaMap, rjkMap, sjkMap, stepanovHasseQuotMap_eq_div_left,
           polyMulRightLinear, LinearMap.comp_apply, LinearMap.add_apply,
           LinearMap.smul_apply, Polynomial.smul_eq_C_mul]
-      have hsum_eval_fin :
-          (sigmaMap ⟨k, hk⟩ v).eval x =
-            ∑ j : Fin J,
-              (p j).eval x * x ^ (j : ℕ) := by
-        have :=
+      have hsum_eval_fin' :
+          (sigmaMap ⟨k, hk⟩ v).eval x = ∑ j : Fin J, (p j).eval x * x ^ (j : ℕ) := by
+        have h :=
           (Polynomial.eval_finset_sum (s := (Finset.univ : Finset (Fin J)))
             (g := fun j : Fin J => p j * Polynomial.X ^ (j : ℕ)) (x := x))
-        simpa [hsum_poly] using this
-      have hsum_eval_fin' :
-          (sigmaMap ⟨k, hk⟩ v).eval x =
-            ∑ j : Fin J,
-              ((hasseDerivOp F k (f ^ ℓ * (rjMap j v)) / f ^ (ℓ - k)).eval x +
-                a *
-                  (hasseDerivOp F k (f ^ (ℓ + c) * (sjMap j v)) /
-                    f ^ (ℓ + c - k)).eval x) *
-                x ^ (j : ℕ) := by
-        simpa [p, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
-          mul_add, mul_assoc] using hsum_eval_fin
-      let G : Fin J → F := fun j =>
-        ((hasseDerivOp F k (f ^ ℓ * (rjMap j v)) / f ^ (ℓ - k)).eval x +
-            a *
-              (hasseDerivOp F k (f ^ (ℓ + c) * (sjMap j v)) /
-                f ^ (ℓ + c - k)).eval x) *
-          x ^ (j : ℕ)
-      have hsum_eval_finG :
-          (sigmaMap ⟨k, hk⟩ v).eval x = ∑ j : Fin J, G j := by
-        simpa [G] using hsum_eval_fin'
-      let GNat : ℕ → F := fun j =>
-        if hj : j < J then G ⟨j, hj⟩ else 0
-      have hsum_eval_finGNat :
-          (sigmaMap ⟨k, hk⟩ v).eval x = ∑ j : Fin J, GNat j := by
-        refine hsum_eval_finG.trans ?_
+        have h' :
+            (sigmaMap ⟨k, hk⟩ v).eval x =
+              ∑ j : Fin J, Polynomial.eval x (p j * Polynomial.X ^ (j : ℕ)) := by
+          simpa [hsum_poly] using h
+        refine h'.trans ?_
+        classical
         refine Finset.sum_congr rfl ?_
-        intro j hj
-        simp [GNat, j.isLt]
-      have hsum_range := (Fin.sum_univ_eq_sum_range (n := J) (f := GNat))
-      refine (hsum_eval_finGNat.trans hsum_range).trans ?_
-      refine Finset.sum_congr rfl ?_
-      intro j hj
-      have hj' : j < J := by
-        simpa using (Finset.mem_range.mp hj)
-      simp [GNat, G, rj, sj, hj']
+        intro j _
+        simp [Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_X]
+      have hrj : ∀ j : Fin J, rjMap j v = rj j := by
+        intro j; simp [rj, j.isLt]
+      have hsj : ∀ j : Fin J, sjMap j v = sj j := by
+        intro j; simp [sj, j.isLt]
+      let fsum : ℕ → F := fun j =>
+        (((hasseDerivOp F k (f ^ ℓ * rj j)) / f ^ (ℓ - k)).eval x +
+            a *
+              ((hasseDerivOp F k (f ^ (ℓ + c) * sj j)) / f ^ (ℓ + c - k)).eval x) *
+          x ^ j
+      have hfin : (sigmaMap ⟨k, hk⟩ v).eval x = ∑ j : Fin J, fsum j := by
+        simpa [fsum, p, hrj, hsj, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
+          mul_add, mul_assoc] using hsum_eval_fin'
+      simpa [fsum] using (hfin.trans (Fin.sum_univ_eq_sum_range (f := fsum) (n := J)))
     have : (sigmaMap ⟨k, hk⟩ v).eval x = 0 := by
       simp [hpoly_zero]
     simpa [hsum_eval] using this
