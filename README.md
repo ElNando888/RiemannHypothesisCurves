@@ -22,13 +22,13 @@ Then open `blueprint/dep_graph_document.html`.
 
 ## Highlights
 
-- **Scope:** ≈3700 lines of Lean.
+- **Scope:** ≈3400 lines of Lean (tracked Lean LOC: 3431).
 - **Workflow:** AI-generated formalization from a LaTeX blueprint with human scaffolding.
 - **Result:** a complete Lean theorem establishing the Riemann Hypothesis for hyperelliptic curves over finite fields.
 
 ---
 
-## Refactor progress (Lean LOC by commit on `origin/refactor`)
+## Refactor progress (Lean LOC by commit on `refactor`)
 
 Lean LOC is computed as the total number of lines across all git-tracked `*.lean` files at each commit (including comments/blank lines).
 
@@ -57,8 +57,11 @@ Lean LOC is computed as the total number of lines across all git-tracked `*.lean
 | `107212d` | 2026-02-05 | Refactor: shorten Stepanov bound algebra | 3771 | 3728 | -43 |
 | `5481845` | 2026-02-05 | Chore: ignore work copies; document workflow | 3728 | 3728 | +0 |
 | `33a151d` | 2026-02-05 | Docs: regenerate README table from origin/refactor | 3728 | 3728 | +0 |
+| `12ba4d6` | 2026-02-05 | Docs: switch README LOC to Lean LOC | 3728 | 3728 | +0 |
+| `5506065` | 2026-02-06 | Refactor: compress Stepanov/Hasse proofs | 3728 | 3439 | -289 |
+| `44011d2` | 2026-02-06 | Refactor: shorten StepanovPolynomial inequalities | 3439 | 3431 | -8 |
 
-To regenerate this table locally (after `git fetch origin`):
+To regenerate this table locally:
 
 ```bash
 python3 - <<'PY'
@@ -78,7 +81,7 @@ def lean_loc_for_commit(commit: str) -> int:
             total += 1
     return total
 
-target = 'origin/refactor'
+target = 'refactor'
 commits = sh('git', 'rev-list', '--reverse', '--first-parent', target).splitlines()
 rows = []
 prev_loc = 0
