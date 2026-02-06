@@ -337,108 +337,82 @@ by
   set c := (Fintype.card F - 1) / 2 with hc_def
   let N1 := {x : F // (Polynomial.eval x f) ^ c = 1 ∧ Polynomial.eval x f ≠ 0}
   let C := {p : F × F // p.2 ^ 2 = Polynomial.eval p.1 f}
-  let C_from_N1 :=
-    {p : C // p.val.1 ∈ {x : F | (Polynomial.eval x f) ^ c = 1 ∧ Polynomial.eval x f ≠ 0}}
-  have h1 : Fintype.card C ≥ Fintype.card C_from_N1 :=
-    Fintype.card_le_of_embedding (Function.Embedding.subtype _)
   have hcard_div : Fintype.card F / 2 = (Fintype.card F - 1) / 2 := by
     have _ := FiniteField.odd_card_of_char_ne_two hodd
     have _ : 0 < Fintype.card F := Fintype.card_pos
     omega
-  have h2 : Fintype.card C_from_N1 = 2 * Fintype.card N1 := by
-    let proj : C_from_N1 → N1 := fun ⟨⟨⟨x, y⟩, hp⟩, hx⟩ => ⟨x, hx⟩
-    have h_fiber_card : ∀ x : N1, Fintype.card {p : C_from_N1 // proj p = x} = 2 := by
-      intro ⟨x, ⟨hxc, hx_ne⟩⟩
-      have hfx_ne : Polynomial.eval x f ≠ 0 := hx_ne
-      have h_euler := FiniteField.isSquare_iff hodd hfx_ne
-      rw [hcard_div] at h_euler
-      have hfx_sq : IsSquare (Polynomial.eval x f) := h_euler.mpr hxc
-      obtain ⟨r, hr⟩ := hfx_sq.exists_mul_self
-      have hr' : r ^ 2 = Polynomial.eval x f := by rw [sq]; exact hr.symm
-      have hr_ne : r ≠ 0 := by
-        intro h; rw [h, sq, mul_zero] at hr'; exact hfx_ne hr'.symm
-      have h_roots : ∀ y : F, y ^ 2 = Polynomial.eval x f ↔ y = r ∨ y = -r := by
-        intro y
-        constructor
-        · intro hy
-          have : y ^ 2 = r ^ 2 := by
-            simpa [hr'.symm] using hy
-          rw [sq_eq_sq_iff_eq_or_eq_neg] at this
-          exact this
-        · intro h_or
-          cases h_or with
-          | inl h => rw [h, hr']
-          | inr h => rw [h, neg_sq, hr']
-      have hr_ne_neg : r ≠ -r := by
-        intro h
-        have h2r : r + r = 0 := by
-          have : r - (-r) = 0 := sub_eq_zero.mpr h
-          simp only [sub_neg_eq_add] at this
-          exact this
-        have h2_times_r : (2 : F) * r = 0 := by rw [two_mul]; exact h2r
-        rw [mul_eq_zero] at h2_times_r
-        cases h2_times_r with
-        | inl h2 =>
-          have := CharP.ringChar_of_prime_eq_zero (R := F) Nat.prime_two h2
-          exact hodd this
-        | inr h0 => exact hr_ne h0
-      have h_sq_roots : Fintype.card {y : F // y ^ 2 = Polynomial.eval x f} = 2 := by
-        have h_equiv : {y : F // y ^ 2 = Polynomial.eval x f} ≃ ({r, -r} : Finset F) := by
-          refine {
-            toFun := fun ⟨y, hy⟩ => by
-              have hy_or := (h_roots y).mp hy
-              refine ⟨y, ?_⟩
-              simp only [Finset.mem_insert, Finset.mem_singleton]
-              exact hy_or
-            invFun := fun ⟨y, hy⟩ => by
-              simp only [Finset.mem_insert, Finset.mem_singleton] at hy
-              refine ⟨y, (h_roots y).mpr hy⟩
-            left_inv := fun ⟨y, hy⟩ => by simp
-            right_inv := fun ⟨y, hy⟩ => by simp
-          }
-        rw [Fintype.card_congr h_equiv]
-        have : ({r, -r} : Finset F).card = 2 := by
-          rw [Finset.card_insert_of_notMem, Finset.card_singleton]
-          simp only [Finset.mem_singleton]
-          exact hr_ne_neg
-        simp only [Fintype.card_coe]
-        exact this
-      have h_fiber_equiv : {p : C_from_N1 // proj p = ⟨x, ⟨hxc, hx_ne⟩⟩} ≃
-          {y : F // y ^ 2 = Polynomial.eval x f} := by
-        refine {
-          toFun := fun ⟨⟨⟨⟨x', y⟩, hp⟩, hx'⟩, hproj⟩ => by
-            simp only [proj] at hproj
-            have hx'_eq : x' = x := Subtype.ext_iff.mp hproj
-            exact ⟨y, by simp only [← hx'_eq]; exact hp⟩
-          invFun := fun ⟨y, hy⟩ => by
-            refine ⟨⟨⟨⟨x, y⟩, hy⟩, ?_⟩, rfl⟩
-            simp only [Set.mem_setOf_eq]
-            exact ⟨hxc, hx_ne⟩
-          left_inv := by
-            intro ⟨⟨⟨⟨x', y⟩, hp⟩, hx'⟩, hproj⟩
-            simp only [proj] at hproj
-            have hx'_eq : x' = x := Subtype.ext_iff.mp hproj
-            simp only [Subtype.mk.injEq]
-            subst hx'_eq
-            rfl
-          right_inv := fun ⟨y, hy⟩ => rfl
-        }
-      rw [Fintype.card_congr h_fiber_equiv, h_sq_roots]
-    calc
-      Fintype.card C_from_N1
-          = Fintype.card ((x : N1) × {p : C_from_N1 // proj p = x}) := by
-            exact Fintype.card_congr (Equiv.sigmaFiberEquiv proj).symm
-      _ = ∑ x : N1, Fintype.card {p : C_from_N1 // proj p = x} := Fintype.card_sigma
-      _ = ∑ _x : N1, 2 := by
-          refine Finset.sum_congr rfl ?_
-          intro x _
-          exact h_fiber_card x
-      _ = 2 * Fintype.card N1 := by
-          simp [Finset.sum_const, Finset.card_univ, mul_comm]
-  have h3 : (Fintype.card C : ℝ) ≥ 2 * (Fintype.card N1 : ℝ) := by
-    have h3' : (Fintype.card C : ℝ) ≥ (Fintype.card C_from_N1 : ℝ) := by exact_mod_cast h1
-    simpa [h2, Nat.cast_mul] using h3'
-  simpa [C, N1, hc_def] using h3
+  have htwo_ne : (2 : F) ≠ 0 := by
+    intro h2
+    have := CharP.ringChar_of_prime_eq_zero (R := F) Nat.prime_two h2
+    exact hodd this
+  have hcard_div' : Fintype.card F / 2 = c := by
+    simpa [hc_def] using hcard_div
+  have hsq : ∀ x : N1, IsSquare (Polynomial.eval x.1 f) := by
+    intro x
+    have hx_ne : Polynomial.eval x.1 f ≠ 0 := x.2.2
+    have h_euler := FiniteField.isSquare_iff hodd hx_ne
+    rw [hcard_div'] at h_euler
+    exact h_euler.mpr x.2.1
+  let root : N1 → F := fun x => Classical.choose (hsq x)
+  have hroot : ∀ x : N1, Polynomial.eval x.1 f = root x * root x := by
+    intro x
+    exact Classical.choose_spec (hsq x)
+  let yval : N1 → Bool → F := fun x b => cond b (root x) (-root x)
+  let φ : N1 × Bool → C := fun xb =>
+    ⟨⟨xb.1.1, yval xb.1 xb.2⟩, by
+      have : (root xb.1) ^ 2 = Polynomial.eval xb.1.1 f := by
+        simpa [pow_two] using (hroot xb.1).symm
+      cases xb.2 <;> simp [yval, this, neg_sq]⟩
+  have hφ_inj : Function.Injective φ := by
+    rintro ⟨x, b⟩ ⟨x', b'⟩ h
+    have hpair : (x.1, yval x b) = (x'.1, yval x' b') :=
+      congrArg Subtype.val h
+    have hxval : x.1 = x'.1 := by simpa using congrArg Prod.fst hpair
+    have hx : x = x' := by
+      apply Subtype.ext
+      exact hxval
+    subst hx
+    have hy : yval x b = yval x b' := by
+      simpa using congrArg Prod.snd hpair
+    have hroot_ne : root x ≠ 0 := by
+      intro h0
+      have : Polynomial.eval x.1 f = 0 := by simpa [h0] using hroot x
+      exact x.2.2 this
+    have hroot_ne_neg : root x ≠ -root x := by
+      intro hneg
+      have hadd : root x + root x = 0 := by
+        calc
+          root x + root x = root x + (-root x) := by
+            exact congrArg (fun t => root x + t) hneg
+          _ = 0 := by simp
+      have hmul : (2 : F) * root x = 0 := by
+        simpa [two_mul] using hadd
+      rcases mul_eq_zero.mp hmul with h2 | hx0
+      · exact htwo_ne h2
+      · exact hroot_ne hx0
+    cases b <;> cases b'
+    · rfl
+    ·
+      have hy' : -root x = root x := by simpa [yval] using hy
+      have : root x = -root x := by
+        simpa using congrArg Neg.neg hy'
+      exact False.elim (hroot_ne_neg this)
+    ·
+      have : root x = -root x := by simpa [yval] using hy
+      exact False.elim (hroot_ne_neg this)
+    · rfl
+  have hcount_nat : 2 * Fintype.card N1 ≤ Fintype.card C := by
+    have hcount' : Fintype.card (N1 × Bool) ≤ Fintype.card C :=
+      Fintype.card_le_of_injective φ hφ_inj
+    have hprod : Fintype.card (N1 × Bool) = 2 * Fintype.card N1 := by
+      simp [Fintype.card_prod, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+    simpa [hprod] using hcount'
+  have hcount_real : ((2 * Fintype.card N1 : ℕ) : ℝ) ≤ (Fintype.card C : ℝ) := by
+    exact_mod_cast hcount_nat
+  have hcount_real' : (2 : ℝ) * (Fintype.card N1 : ℝ) ≤ (Fintype.card C : ℝ) := by
+    simpa [Nat.cast_mul] using hcount_real
+  -- unfold local notation back to the statement
+  simpa [C, N1, hc_def, ge_iff_le, two_mul, mul_assoc, mul_left_comm, mul_comm] using hcount_real'
 
 lemma partition_N1_eq_q_sub_S_neg1
     (F : Type*) [Field F] [Fintype F] [DecidableEq F]
