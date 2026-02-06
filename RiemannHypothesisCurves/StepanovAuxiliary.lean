@@ -141,59 +141,42 @@ lemma hasseDerivOp_mul_Xqpow
   hasseDerivOp F k (P * (Polynomial.X : Polynomial F)^(j * q)) =
     hasseDerivOp F k P * (Polynomial.X : Polynomial F)^(j * q) :=
 by
+  classical
   have choose_mul_card_pow_cast_eq_zero
       (q j i : ℕ) (hq : q = Fintype.card F)
       (hi_pos : 0 < i) (hi_lt : i < q) :
       (Nat.choose (j * q) i : F) = 0 := by
     have hfrob :
         (1 + (Polynomial.X : Polynomial F)) ^ q =
-          (1 : Polynomial F) ^ q +
-            (Polynomial.X : Polynomial F) ^ q := by
-      simpa [hq, FiniteField.coe_frobeniusAlgHom] using
+          (1 : Polynomial F) + (Polynomial.X : Polynomial F) ^ q := by
+      simpa [hq, FiniteField.coe_frobeniusAlgHom, one_pow] using
         (FiniteField.frobeniusAlgHom F (Polynomial F)).map_add
           (1 : Polynomial F) (Polynomial.X : Polynomial F)
     have hpow :
         (1 + (Polynomial.X : Polynomial F)) ^ (j * q) =
           (1 + (Polynomial.X : Polynomial F) ^ q) ^ j := by
-      have h1 :
-          (1 + (Polynomial.X : Polynomial F)) ^ (j * q) =
-            ((1 + (Polynomial.X : Polynomial F)) ^ q) ^ j := by
-        simp [pow_mul, mul_comm]
-      have h2 :
-          ((1 + (Polynomial.X : Polynomial F)) ^ q) ^ j =
-            (1 + (Polynomial.X : Polynomial F) ^ q) ^ j := by
-        simpa [one_pow] using
-          congrArg (fun p : Polynomial F => p ^ j) hfrob
-      exact h1.trans h2
+      simpa [mul_comm, pow_mul, hfrob]
     have hcoeff_right_zero :
         ((1 + (Polynomial.X : Polynomial F) ^ q) ^ j).coeff i = 0 := by
-      have h' : ∀ n : ℕ,
-          ((1 + (Polynomial.X : Polynomial F) ^ q) ^ n).coeff i = 0 := by
-        refine Nat.rec ?base ?step
-        · have hi_ne_zero : i ≠ 0 := ne_of_gt hi_pos
-          simp [pow_zero, Polynomial.coeff_one, hi_ne_zero]
-        · intro n hn
-          have hmul :
-              (((1 + (Polynomial.X : Polynomial F) ^ q) ^ n) *
-                  (Polynomial.X : Polynomial F) ^ q).coeff i = 0 := by
-            simpa [Nat.not_le.mpr hi_lt] using
-              (Polynomial.coeff_mul_X_pow'
-                (p := (1 + (Polynomial.X : Polynomial F) ^ q) ^ n)
-                (n := q) (d := i))
-          have :
-              ((1 + (Polynomial.X : Polynomial F) ^ q) ^ (n.succ)).coeff i =
-                ((1 + (Polynomial.X : Polynomial F) ^ q) ^ n).coeff i +
-                  (((1 + (Polynomial.X : Polynomial F) ^ q) ^ n) *
-                      (Polynomial.X : Polynomial F) ^ q).coeff i := by
-            simp [pow_succ, mul_add, Polynomial.coeff_add]
-          simp [this, hn, hmul]
-      exact h' j
+      have hi_ne : i ≠ 0 := ne_of_gt hi_pos
+      have hcoeff : ∀ n : ℕ, ((1 + (Polynomial.X : Polynomial F) ^ q) ^ n).coeff i = 0 := by
+        intro n
+        induction n with
+        | zero =>
+            simp [Polynomial.coeff_one, hi_ne]
+        | succ n ih =>
+            have hmul :
+                (((1 + (Polynomial.X : Polynomial F) ^ q) ^ n) *
+                    (Polynomial.X : Polynomial F) ^ q).coeff i = 0 := by
+              simpa [Nat.not_le.mpr hi_lt] using
+                (Polynomial.coeff_mul_X_pow'
+                  (p := (1 + (Polynomial.X : Polynomial F) ^ q) ^ n) (n := q) (d := i))
+            simp [pow_succ, mul_add, Polynomial.coeff_add, ih, hmul]
+      exact hcoeff j
     have hcoeff_left_zero :
         ((1 + (Polynomial.X : Polynomial F)) ^ (j * q)).coeff i = 0 := by
-      simpa [congrArg (fun p : Polynomial F => p.coeff i) hpow.symm]
-        using hcoeff_right_zero
-    simpa [Polynomial.coeff_one_add_X_pow (R := F) (n := j * q) (k := i)]
-      using hcoeff_left_zero
+      simpa [hpow] using hcoeff_right_zero
+    simpa [Polynomial.coeff_one_add_X_pow (R := F) (n := j * q) (k := i)] using hcoeff_left_zero
 
   have hasseDerivOp_X_pow_mul_card_eq_zero
       (j k : ℕ) (hq : q = Fintype.card F)
@@ -213,56 +196,43 @@ by
               (P * (Polynomial.X : Polynomial F) ^ (j * q)) =
             ∑ p ∈ Finset.antidiagonal (Nat.succ k'),
               hasseDerivOp F p.1 P *
-                hasseDerivOp F p.2
-                  ((Polynomial.X : Polynomial F) ^ (j * q)) := by
+                hasseDerivOp F p.2 ((Polynomial.X : Polynomial F) ^ (j * q)) := by
         simpa [hasseDerivOp, mul_comm, mul_left_comm, mul_assoc] using
           (Polynomial.hasseDeriv_mul (R := F) (k := Nat.succ k')
-            (f := P)
-            (g := (Polynomial.X : Polynomial F) ^ (j * q)))
+            (f := P) (g := (Polynomial.X : Polynomial F) ^ (j * q)))
       have hsum :
-          ∑ p ∈ Finset.antidiagonal (Nat.succ k'),
+          (∑ p ∈ Finset.antidiagonal (Nat.succ k'),
               hasseDerivOp F p.1 P *
-                hasseDerivOp F p.2
-                  ((Polynomial.X : Polynomial F) ^ (j * q)) =
-            hasseDerivOp F (Nat.succ k') P *
-              (Polynomial.X : Polynomial F) ^ (j * q) := by
-        have h' :
-            ∑ p ∈ Finset.antidiagonal (Nat.succ k'),
+                hasseDerivOp F p.2 ((Polynomial.X : Polynomial F) ^ (j * q))) =
+            hasseDerivOp F (Nat.succ k') P * (Polynomial.X : Polynomial F) ^ (j * q) := by
+        have :
+            (∑ p ∈ Finset.antidiagonal (Nat.succ k'),
                 hasseDerivOp F p.1 P *
-                  hasseDerivOp F p.2
-                    ((Polynomial.X : Polynomial F) ^ (j * q)) =
+                  hasseDerivOp F p.2 ((Polynomial.X : Polynomial F) ^ (j * q))) =
               hasseDerivOp F (Nat.succ k') P *
-                hasseDerivOp F 0
-                  ((Polynomial.X : Polynomial F) ^ (j * q)) := by
+                hasseDerivOp F 0 ((Polynomial.X : Polynomial F) ^ (j * q)) := by
           refine
-            Finset.sum_eq_single_of_mem
-              (a := (Nat.succ k', 0))
-              ?ha
-              ?hothers
-          · exact Finset.mem_antidiagonal.mpr (by simp)
-          · intro p hp_mem hp_ne
-            rcases p with ⟨a, b⟩
-            change (a, b) ∈ _ at hp_mem
-            change (a, b) ≠ (Nat.succ k', 0) at hp_ne
-            have hsum_ab : a + b = Nat.succ k' :=
-              Finset.mem_antidiagonal.mp hp_mem
-            have hb_ne_zero : b ≠ 0 := by
-              intro hb0
-              have : a = Nat.succ k' := by
-                simpa [hb0] using hsum_ab
-              apply hp_ne
-              ext <;> simp [this, hb0]
-            have hb_pos : 0 < b := Nat.pos_of_ne_zero hb_ne_zero
-            have hb_le : b ≤ Nat.succ k' := by
-              have : b ≤ a + b := Nat.le_add_left _ _
-              simpa [hsum_ab] using this
-            have hb_ltq : b < q := lt_of_le_of_lt hb_le hkq
-            have hderiv_zero :
-                hasseDerivOp F b
-                    ((Polynomial.X : Polynomial F) ^ (j * q)) = 0 :=
-              hasseDerivOp_X_pow_mul_card_eq_zero j b hq hb_pos hb_ltq
-            simp [hderiv_zero]
-        simpa [hasseDerivOp] using h'
+            Finset.sum_eq_single_of_mem (a := (Nat.succ k', 0))
+              (Finset.mem_antidiagonal.mpr (by simp))
+              ?_
+          intro p hp_mem hp_ne
+          rcases p with ⟨a, b⟩
+          have hab : a + b = Nat.succ k' := Finset.mem_antidiagonal.mp hp_mem
+          have hb0 : b ≠ 0 := by
+            intro hb0
+            have ha' : a = Nat.succ k' := by simpa [hb0] using hab
+            apply hp_ne
+            ext <;> simp [ha', hb0]
+          have hb_pos : 0 < b := Nat.pos_of_ne_zero hb0
+          have hb_le : b ≤ Nat.succ k' := by
+            have : b ≤ a + b := Nat.le_add_left _ _
+            simpa [hab] using this
+          have hb_ltq : b < q := lt_of_le_of_lt hb_le hkq
+          have hderiv_zero :
+              hasseDerivOp F b ((Polynomial.X : Polynomial F) ^ (j * q)) = 0 :=
+            hasseDerivOp_X_pow_mul_card_eq_zero j b hq hb_pos hb_ltq
+          simp [hderiv_zero]
+        simpa [hasseDerivOp] using this
       simpa using (hmul.trans hsum)
 
 lemma stepanov_form (F : Type*) [Field F] [Fintype F]
@@ -296,14 +266,11 @@ by
     exact ⟨rjk_j, sjk_j, hr_eq, hs_eq⟩
   choose rjk sjk hrjk hsjk using h_ex
   refine ⟨rjk, sjk, hrjk, hsjk, ?_⟩
-  have h_exp : ℓ + c - k = (ℓ - k) + c := by
-    calc
-      ℓ + c - k = c + ℓ - k := by ac_rfl
-      _ = c + (ℓ - k) := by
-            simpa using (Nat.add_sub_assoc (m := ℓ) (k := k) hk.le c)
-      _ = (ℓ - k) + c := by ac_rfl
   have hpow : f ^ (ℓ + c - k) = f ^ (ℓ - k) * f ^ c := by
-    simp [h_exp, pow_add]
+    have h : ℓ + c - k = (ℓ - k) + c := by
+      simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+        (Nat.add_sub_assoc (m := ℓ) (k := k) hk.le c)
+    simpa [h] using (pow_add f (ℓ - k) c)
   have hP_factor (j : ℕ) :
       hasseDerivOp F k (f ^ ℓ * (rj j + sj j * f ^ c)) =
         f ^ (ℓ - k) * (rjk j + sjk j * f ^ c) := by
@@ -316,13 +283,7 @@ by
       _ = rjk j * f ^ (ℓ - k) + sjk j * f ^ (ℓ + c - k) := by
               simp [hrjk j, hsjk j]
       _ = f ^ (ℓ - k) * (rjk j + sjk j * f ^ c) := by
-              -- move powers into the desired normal form
-              calc
-                rjk j * f ^ (ℓ - k) + sjk j * f ^ (ℓ + c - k)
-                    = f ^ (ℓ - k) * rjk j + f ^ (ℓ - k) * (sjk j * f ^ c) := by
-                        simp [hpow, mul_assoc, mul_comm]
-                _ = f ^ (ℓ - k) * (rjk j + sjk j * f ^ c) := by
-                        simp [mul_add]
+              simp [hpow, add_mul, mul_add, mul_assoc, mul_left_comm, mul_comm]
   -- push `hasseDerivOp` through the outer sum and use the `X^(j*q)` lemma termwise
   have h_sum_rewrite :
       f ^ ℓ *
@@ -347,10 +308,9 @@ by
             (f ^ (ℓ - k) * (rjk j + sjk j * f ^ c)) * Polynomial.X ^ (j * q)) := by
           refine Finset.sum_congr rfl ?_
           intro j hj
-          have hX :=
-            hasseDerivOp_mul_Xqpow (F := F) (q := q) (k := k) (hq := hq) (hkq := hkq)
-              (P := f ^ ℓ * (rj j + sj j * f ^ c)) (j := j)
-          simpa [hP_factor j, mul_assoc] using hX
+          simpa [hP_factor j, mul_assoc] using
+            (hasseDerivOp_mul_Xqpow (F := F) (q := q) (k := k) (hq := hq) (hkq := hkq)
+              (P := f ^ ℓ * (rj j + sj j * f ^ c)) (j := j))
     _ =
         f ^ (ℓ - k) *
           Finset.sum (Finset.range J)

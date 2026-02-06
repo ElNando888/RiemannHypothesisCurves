@@ -57,152 +57,103 @@ lemma hasseLeibniz_general (F : Type*) [Field F] (k r : ℕ) (f : Fin r → Poly
       (fun j => (Finset.univ : Finset (Fin r)).prod
         (fun i => hasseDerivOp F ((j i).val) (f i))) :=
 by
+  classical
   have hasseLeibniz_piAntidiag_finset :
       ∀ (s : Finset (Fin r)) (k : ℕ),
         hasseDerivOp F k (s.prod f) =
-          ∑ j ∈ s.piAntidiag k,
-            s.prod fun i => hasseDerivOp F (j i) (f i) := by
+          ∑ j ∈ s.piAntidiag k, s.prod fun i => hasseDerivOp F (j i) (f i) := by
     intro s
-    refine Finset.cons_induction ?h_empty ?h_cons s
+    refine Finset.cons_induction (s := s) ?_ ?_
     · intro k
       cases k with
-      | zero =>
-          simp [hasseDerivOp]
+      | zero => simp [hasseDerivOp]
       | succ k =>
           simpa [hasseDerivOp,
-            Finset.piAntidiag_empty_of_ne_zero (Nat.succ_ne_zero _)] using
-            (Polynomial.hasseDeriv_C (R := F) (k := Nat.succ k) (r := (1 : F))
-              (Nat.succ_pos _))
+            Finset.piAntidiag_empty_of_ne_zero (Nat.succ_ne_zero k)] using
+            (Polynomial.hasseDeriv_C (R := F) (k := Nat.succ k) (r := (1 : F)) (Nat.succ_pos k))
     · intro a s ha ih k
       let u : Finset (Fin r) := Finset.cons a s ha
+      let w : (Fin r → ℕ) → Polynomial F := fun j => u.prod fun i => hasseDerivOp F (j i) (f i)
       have hmul :
           hasseDerivOp F k (u.prod f) =
             ∑ p ∈ Finset.antidiagonal k,
-              hasseDerivOp F p.1 (f a) *
-                hasseDerivOp F p.2 (s.prod f) := by
-        have hprod : u.prod f = f a * s.prod f := by
-          simpa [u] using
-            (Finset.prod_cons (s := s) (a := a) (f := f) ha)
-        simpa [hasseDerivOp, hprod] using
-          (Polynomial.hasseDeriv_mul (R := F) (k := k)
-            (f := f a) (g := s.prod f))
+              hasseDerivOp F p.1 (f a) * hasseDerivOp F p.2 (s.prod f) := by
+        simpa [u, hasseDerivOp, Finset.prod_cons, ha] using
+          (Polynomial.hasseDeriv_mul (R := F) (k := k) (f := f a) (g := s.prod f))
       have hL :
           hasseDerivOp F k (u.prod f) =
             ∑ p ∈ Finset.antidiagonal k,
-              hasseDerivOp F p.1 (f a) *
-                ∑ g ∈ s.piAntidiag p.2,
-                  s.prod fun i => hasseDerivOp F (g i) (f i) := by
+              ∑ g ∈ s.piAntidiag p.2,
+                hasseDerivOp F p.1 (f a) *
+                  s.prod (fun i => hasseDerivOp F (g i) (f i)) := by
         refine (hmul.trans ?_)
         refine Finset.sum_congr rfl ?_
         intro p hp
-        simp [ih p.2]
-      let w : (Fin r → ℕ) → Polynomial F :=
-        fun j => u.prod fun i => hasseDerivOp F (j i) (f i)
-      have hR1 :
-          ∑ j ∈ u.piAntidiag k, w j =
-            ∑ p ∈ Finset.antidiagonal k,
-              ∑ j ∈ (s.piAntidiag p.2).map
-                      (addRightEmbedding (fun t => if t = a then p.1 else 0)),
-                w j := by
-        let t : (ℕ × ℕ) → Finset (Fin r → ℕ) :=
-          fun p =>
-            (s.piAntidiag p.2).map
-              (addRightEmbedding (fun t => if t = a then p.1 else 0))
-        have hpw :
-            (↑(Finset.antidiagonal k) : Set (ℕ × ℕ)).PairwiseDisjoint t := by
-          simpa [t] using
-            (Finset.pairwiseDisjoint_piAntidiag_map_addRightEmbedding
-              (i := a) (s := s) (hi := ha) (n := k))
-        have hsd :
-            ∑ j ∈ (Finset.antidiagonal k).biUnion t, w j =
-              ∑ p ∈ Finset.antidiagonal k,
-                ∑ j ∈ t p, w j := by
-          simpa [t] using
-            (Finset.sum_biUnion
-              (s := Finset.antidiagonal k)
-              (t := t)
-              (hs := hpw)
-              (f := w))
-        have hpi :
-            u.piAntidiag k = (Finset.antidiagonal k).biUnion t := by
-          simpa [u, t, Finset.disjiUnion_eq_biUnion] using
-            (Finset.piAntidiag_cons (i := a) (s := s) (hi := ha) (n := k))
-        simpa [hpi, t] using hsd
-      have h_inner :
-          ∀ p ∈ Finset.antidiagonal k,
-            (∑ j ∈ (s.piAntidiag p.2).map
-                      (addRightEmbedding (fun t => if t = a then p.1 else 0)),
-                w j) =
-              hasseDerivOp F p.1 (f a) *
-                ∑ g ∈ s.piAntidiag p.2,
-                  s.prod fun i => hasseDerivOp F (g i) (f i) := by
-        intro p hp
-        let e : (Fin r → ℕ) ↪ (Fin r → ℕ) :=
-          addRightEmbedding (fun t => if t = a then p.1 else 0)
-        have h_pointwise :
-            ∀ g ∈ s.piAntidiag p.2,
-              w (e g) =
-                hasseDerivOp F p.1 (f a) *
-                  s.prod fun i => hasseDerivOp F (g i) (f i) := by
-          intro g hg
-          obtain ⟨-, hmem⟩ : s.sum g = p.2 ∧ ∀ i, g i ≠ 0 → i ∈ s := by
-            simpa [Finset.mem_piAntidiag] using hg
-          have hga : g a = 0 := by
-            by_contra hne
-            exact ha (hmem a hne)
-          have hsplit :
-              u.prod (fun i => hasseDerivOp F (e g i) (f i)) =
-                hasseDerivOp F (e g a) (f a) *
-                  s.prod fun i => hasseDerivOp F (e g i) (f i) := by
-            simpa [u] using
-              (Finset.prod_cons
-                (s := s) (a := a)
-                (f := fun i => hasseDerivOp F (e g i) (f i))
-                ha)
-          have h_on_s :
-              ∀ i ∈ s, e g i = g i := by
-            intro i hi
-            have hne : i ≠ a := by
-              intro h
-              subst h
-              exact ha hi
-            simp [e, hne]
-          have hprod_s :
-              s.prod (fun i => hasseDerivOp F (e g i) (f i)) =
-                s.prod fun i => hasseDerivOp F (g i) (f i) := by
-            refine Finset.prod_congr rfl ?_
-            intro i hi
-            simp [h_on_s i hi]
-          have h_at_a : e g a = p.1 := by
-            simp [e, hga]
-          simp [w, hsplit, h_at_a, hprod_s]
-        calc
-          ∑ j ∈ (s.piAntidiag p.2).map
-                    (addRightEmbedding (fun t => if t = a then p.1 else 0)),
-                w j =
-              ∑ g ∈ s.piAntidiag p.2, w (e g) := by simp [w, e]
-          _ =
-              ∑ g ∈ s.piAntidiag p.2,
-                hasseDerivOp F p.1 (f a) *
-                  s.prod fun i => hasseDerivOp F (g i) (f i) := by
-                refine Finset.sum_congr rfl ?_
-                intro g hg
-                simpa using h_pointwise g hg
-          _ = hasseDerivOp F p.1 (f a) *
-                ∑ g ∈ s.piAntidiag p.2,
-                  s.prod fun i => hasseDerivOp F (g i) (f i) := by
-                simp [Finset.mul_sum]
+        simp [ih p.2, Finset.mul_sum, mul_assoc]
       have hR :
-          ∑ j ∈ u.piAntidiag k, w j =
+          (∑ j ∈ u.piAntidiag k, w j) =
             ∑ p ∈ Finset.antidiagonal k,
-              hasseDerivOp F p.1 (f a) *
-                ∑ g ∈ s.piAntidiag p.2,
-                  s.prod fun i => hasseDerivOp F (g i) (f i) := by
-        refine (hR1.trans ?_)
+              ∑ g ∈ s.piAntidiag p.2,
+                w ((addRightEmbedding (fun t => if t = a then p.1 else 0)) g) := by
+        -- `piAntidiag_cons` + `sum_disjiUnion`, then remove the `map` with `sum_map`.
+        have :
+            (∑ j ∈ u.piAntidiag k, w j) =
+              ∑ p ∈ Finset.antidiagonal k,
+                ∑ j ∈ (s.piAntidiag p.2).map
+                        (addRightEmbedding (fun t => if t = a then p.1 else 0)),
+                  w j := by
+          -- avoid `simp` rewriting `cons` as `insert` so that `piAntidiag_cons` applies.
+          dsimp [u]
+          rw [Finset.piAntidiag_cons (i := a) (s := s) (hi := ha) (n := k)]
+          simpa using (Finset.sum_disjiUnion
+            (s := Finset.antidiagonal k)
+            (t := fun p : ℕ × ℕ =>
+              (Finset.piAntidiag s p.2).map
+                (addRightEmbedding (fun t => if t = a then p.1 else 0)))
+            (h := Finset.pairwiseDisjoint_piAntidiag_map_addRightEmbedding
+              (i := a) (s := s) (hi := ha) (n := k))
+            (f := w))
+        refine (this.trans ?_)
         refine Finset.sum_congr rfl ?_
         intro p hp
-        simpa using h_inner p hp
-      simpa [u, w] using hL.trans hR.symm
+        simpa using
+          (Finset.sum_map
+            (s := s.piAntidiag p.2)
+            (f := fun g => w ((addRightEmbedding (fun t => if t = a then p.1 else 0)) g))
+            (g := fun j => w j)
+            (e := addRightEmbedding (fun t => if t = a then p.1 else 0)))
+      have hw :
+          ∀ p ∈ Finset.antidiagonal k, ∀ g ∈ s.piAntidiag p.2,
+            w ((addRightEmbedding (fun t => if t = a then p.1 else 0)) g) =
+              hasseDerivOp F p.1 (f a) *
+                s.prod (fun i => hasseDerivOp F (g i) (f i)) := by
+        intro p hp g hg
+        have hga : g a = 0 := by
+          by_contra hne
+          rcases (Finset.mem_piAntidiag.mp hg) with ⟨-, hsup⟩
+          exact ha (hsup a (by simpa using hne))
+        have hprod_s :
+            s.prod (fun i => hasseDerivOp F (g i + if i = a then p.1 else 0) (f i)) =
+              s.prod (fun i => hasseDerivOp F (g i) (f i)) := by
+          refine Finset.prod_congr rfl ?_
+          intro i hi
+          have hne : i ≠ a := by
+            intro h
+            subst h
+            exact ha hi
+          simp [hne]
+        dsimp [w]
+        dsimp [u]
+        rw [Finset.prod_cons (s := s) (a := a)
+          (f := fun i => hasseDerivOp F (g i + if i = a then p.1 else 0) (f i)) ha]
+        simpa [hga, hprod_s, mul_assoc]
+      refine hL.trans ?_
+      refine (hR.trans ?_).symm
+      refine Finset.sum_congr rfl ?_
+      intro p hp
+      refine Finset.sum_congr rfl ?_
+      intro g hg
+      simpa using hw p hp g hg
   simpa using
     (hasseLeibniz_piAntidiag_finset (Finset.univ : Finset (Fin r)) k).trans
       (sum_hasseDeriv_piAntidiag_eq_sum_fin F k r f)
@@ -215,13 +166,6 @@ lemma hasseDerivOp_X_sub_C_pow (F : Type*) [Field F]
 by
   intro a
   ext n
-  have hL :
-      (hasseDerivOp F k ((Polynomial.X - Polynomial.C a) ^ r)).coeff n =
-        ((n + k).choose k : F) *
-          ((Polynomial.X - Polynomial.C a) ^ r).coeff (n + k) := by
-    simpa [hasseDerivOp] using
-      (Polynomial.hasseDeriv_coeff (k := k)
-        (f := (Polynomial.X - Polynomial.C a) ^ r) (n := n))
   have hcoeff_pow :
       ((Polynomial.X - Polynomial.C a) ^ r).coeff (n + k) =
         (-a) ^ (r - (n + k)) * (Nat.choose r (n + k) : F) := by
@@ -232,42 +176,8 @@ by
         (-a) ^ ((r - k) - n) * (Nat.choose (r - k) n : F) := by
     simpa [sub_eq_add_neg] using
       (Polynomial.coeff_X_add_C_pow (R := F) (-a) (r - k) n)
-  have hL' :
-      (hasseDerivOp F k ((Polynomial.X - Polynomial.C a) ^ r)).coeff n =
-        (-a) ^ (r - (n + k)) *
-          (((n + k).choose k : F) * (Nat.choose r (n + k) : F)) := by
-    calc
-      (hasseDerivOp F k ((Polynomial.X - Polynomial.C a) ^ r)).coeff n =
-          ((n + k).choose k : F) *
-            ((Polynomial.X - Polynomial.C a) ^ r).coeff (n + k) := hL
-      _ = ((n + k).choose k : F) *
-            ((-a) ^ (r - (n + k)) * (Nat.choose r (n + k) : F)) := by
-            simp [hcoeff_pow]
-      _ = (-a) ^ (r - (n + k)) *
-            (((n + k).choose k : F) * (Nat.choose r (n + k) : F)) := by
-            ring
-  have hR' :
-      (Polynomial.C (Nat.choose r k : F) *
-          (Polynomial.X - Polynomial.C a) ^ (r - k)).coeff n =
-        (-a) ^ (r - (n + k)) *
-          ((Nat.choose r k : F) * (Nat.choose (r - k) n : F)) := by
-    calc
-      (Polynomial.C (Nat.choose r k : F) *
-            (Polynomial.X - Polynomial.C a) ^ (r - k)).coeff n =
-          (Nat.choose r k : F) *
-            ((Polynomial.X - Polynomial.C a) ^ (r - k)).coeff n := by
-            simp
-      _ = (Nat.choose r k : F) *
-            ((-a) ^ ((r - k) - n) * (Nat.choose (r - k) n : F)) := by
-            simp [hcoeff_pow2]
-      _ = (Nat.choose r k : F) *
-            ((-a) ^ (r - (n + k)) * (Nat.choose (r - k) n : F)) := by
-            have : (r - k) - n = r - (n + k) := by
-              simp [Nat.add_comm, Nat.sub_sub]
-            simp [this]
-      _ = (-a) ^ (r - (n + k)) *
-            ((Nat.choose r k : F) * (Nat.choose (r - k) n : F)) := by
-            ring
+  have hexp : (r - k) - n = r - (n + k) := by
+    simp [Nat.add_comm, Nat.sub_sub]
   have hscalar :
       (((n + k).choose k : F) * (Nat.choose r (n + k) : F)) =
         (Nat.choose r k : F) * (Nat.choose (r - k) n : F) := by
@@ -292,18 +202,36 @@ by
         (add_lt_add_iff_right (a := k)).1
           (by simpa [Nat.sub_add_cancel hk] using hlt)
       simp [Nat.choose_eq_zero_of_lt hlt, Nat.choose_eq_zero_of_lt hlt']
-  have hmid :
-      (-a) ^ (r - (n + k)) *
-        (((n + k).choose k : F) * (Nat.choose r (n + k) : F)) =
-      (-a) ^ (r - (n + k)) *
-        ((Nat.choose r k : F) * (Nat.choose (r - k) n : F)) := by
-    exact congrArg (fun x => (-a) ^ (r - (n + k)) * x) hscalar
-  have hcoeff_eq :
+  have hL :
       (hasseDerivOp F k ((Polynomial.X - Polynomial.C a) ^ r)).coeff n =
-        (Polynomial.C (Nat.choose r k : F) *
-          (Polynomial.X - Polynomial.C a) ^ (r - k)).coeff n :=
-    (hL'.trans hmid).trans hR'.symm
-  simpa using hcoeff_eq
+        (-a) ^ (r - (n + k)) *
+          (((n + k).choose k : F) * (Nat.choose r (n + k) : F)) := by
+    calc
+      (hasseDerivOp F k ((Polynomial.X - Polynomial.C a) ^ r)).coeff n =
+          ((n + k).choose k : F) * ((Polynomial.X - Polynomial.C a) ^ r).coeff (n + k) := by
+            simpa [hasseDerivOp] using
+              (Polynomial.hasseDeriv_coeff (k := k) (f := (Polynomial.X - Polynomial.C a) ^ r) (n := n))
+      _ = ((n + k).choose k : F) *
+            ((-a) ^ (r - (n + k)) * (Nat.choose r (n + k) : F)) := by
+            simp [hcoeff_pow]
+      _ = (-a) ^ (r - (n + k)) *
+            (((n + k).choose k : F) * (Nat.choose r (n + k) : F)) := by
+            ring
+  have hR :
+      (Polynomial.C (Nat.choose r k : F) *
+          (Polynomial.X - Polynomial.C a) ^ (r - k)).coeff n =
+        (-a) ^ (r - (n + k)) *
+          ((Nat.choose r k : F) * (Nat.choose (r - k) n : F)) := by
+    calc
+      (Polynomial.C (Nat.choose r k : F) * (Polynomial.X - Polynomial.C a) ^ (r - k)).coeff n =
+          (Nat.choose r k : F) * ((Polynomial.X - Polynomial.C a) ^ (r - k)).coeff n := by simp
+      _ = (Nat.choose r k : F) * ((-a) ^ ((r - k) - n) * (Nat.choose (r - k) n : F)) := by
+          simp [hcoeff_pow2]
+      _ = (-a) ^ (r - (n + k)) *
+            ((Nat.choose r k : F) * (Nat.choose (r - k) n : F)) := by
+          simp [hexp, mul_assoc, mul_left_comm, mul_comm]
+  rw [hL, hR]
+  simpa [hscalar]
 
 lemma hasseDerivOp_prod_single_polynomial_dvd
     (F : Type*) [Field F] (k r : ℕ)
@@ -488,45 +416,29 @@ by
               simpa [Polynomial.natDegree_mul (p := den) (q := q) hden_ne hq_ne] using this
             have hden_nat : den.natDegree = (r - k) * g.natDegree := by
               simp [den, hg]
-            have hq_nat :
-                q.natDegree = num.natDegree - den.natDegree := by
-              have : num.natDegree - den.natDegree = q.natDegree := by
-                simpa [hnum_nat_eq] using
-                  (Nat.add_sub_cancel_left den.natDegree q.natDegree)
-              exact this.symm
             have hq_nat_le : q.natDegree ≤ f.natDegree + k * g.natDegree - k := by
               have hsub :
-                  num.natDegree - den.natDegree ≤
-                    (f.natDegree + r * g.natDegree - k) - den.natDegree :=
+                  num.natDegree - den.natDegree ≤ (f.natDegree + r * g.natDegree - k) - den.natDegree :=
                 Nat.sub_le_sub_right hnum_nat _
-              have hr_mul :
-                  r * g.natDegree =
-                    k * g.natDegree + (r - k) * g.natDegree := by
+              have hr_mul : r * g.natDegree = k * g.natDegree + (r - k) * g.natDegree := by
                 calc
-                  r * g.natDegree = (k + (r - k)) * g.natDegree := by
-                    simp [Nat.add_sub_of_le hk]
-                  _ = k * g.natDegree + (r - k) * g.natDegree := by
-                    simp [Nat.add_mul]
+                  r * g.natDegree = (k + (r - k)) * g.natDegree := by simp [Nat.add_sub_of_le hk]
+                  _ = k * g.natDegree + (r - k) * g.natDegree := by simp [Nat.add_mul]
               have hRHS :
                   (f.natDegree + r * g.natDegree - k) - den.natDegree =
                     f.natDegree + k * g.natDegree - k := by
                 calc
                   (f.natDegree + r * g.natDegree - k) - den.natDegree
-                      = f.natDegree + r * g.natDegree - (k + den.natDegree) := by
-                          simpa [Nat.sub_sub]
-                  _ = f.natDegree + (k * g.natDegree + den.natDegree) - (k + den.natDegree) := by
-                        simp [hr_mul, hden_nat, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
-                  _ = f.natDegree + k * g.natDegree - k := by
-                        calc
-                          f.natDegree + (k * g.natDegree + den.natDegree) - (k + den.natDegree)
-                              = (f.natDegree + k * g.natDegree + den.natDegree) - (k + den.natDegree) := by
-                                  simp [Nat.add_assoc]
-                          _ = (f.natDegree + k * g.natDegree) - k := by
-                                simpa [Nat.add_assoc] using
-                                  (Nat.add_sub_add_right (f.natDegree + k * g.natDegree) den.natDegree k)
-                          _ = f.natDegree + k * g.natDegree - k := rfl
+                      = (f.natDegree + r * g.natDegree) - (k + den.natDegree) := by
+                          simp [Nat.sub_sub, Nat.add_assoc]
+                  _ = (f.natDegree + (k * g.natDegree + den.natDegree)) - (k + den.natDegree) := by
+                          simp [hr_mul, hden_nat, Nat.add_assoc]
+                  _ = (f.natDegree + k * g.natDegree) - k := by
+                          simpa [Nat.add_assoc] using
+                            (Nat.add_sub_add_right (f.natDegree + k * g.natDegree) den.natDegree k)
+                  _ = f.natDegree + k * g.natDegree - k := rfl
               have : q.natDegree ≤ (f.natDegree + r * g.natDegree - k) - den.natDegree := by
-                simpa [hq_nat] using hsub
+                simpa [hnum_nat_eq] using hsub
               simpa [hRHS] using this
             have hdeg_q :
                 Polynomial.degree q ≤

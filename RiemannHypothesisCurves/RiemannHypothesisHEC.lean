@@ -118,9 +118,7 @@ by
   have hℓ_le_q_div3 : ℓ ≤ q / 3 := by
     simpa [ℓ, hℓ_def] using ceil_sqrt_le_div_three q h15_le_q
   have h_sqrt_le_ℓ : Real.sqrt q ≤ (ℓ : ℝ) := by
-    have hceil : Real.sqrt q ≤ (Nat.ceil (Real.sqrt q) : ℝ) :=
-      Nat.le_ceil (Real.sqrt q)
-    simpa [ℓ, hℓ_def] using hceil
+    simpa [ℓ, hℓ_def] using (Nat.le_ceil (Real.sqrt q))
   have hℓ_pos_real : 0 < (ℓ : ℝ) :=
     lt_of_lt_of_le (Real.sqrt_pos.mpr (by exact_mod_cast hq_pos_nat)) h_sqrt_le_ℓ
   have hℓ_pos : 0 < ℓ := by exact_mod_cast hℓ_pos_real
@@ -140,9 +138,8 @@ by
   have h_card_subtype_eq :
       (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} : ℝ)
         = (Sfin.card : ℝ) := by
-    exact_mod_cast (by
-      simp [Sfin] :
-        Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} = Sfin.card)
+    exact_mod_cast (by simpa [Sfin] :
+      Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} = Sfin.card)
   have h_card_le :
       (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} : ℝ)
         ≤ (R.natDegree : ℝ) / (ℓ : ℝ) := by
@@ -152,15 +149,7 @@ by
         < (m : ℝ) * (q : ℝ)
           + (ℓ : ℝ) * (q : ℝ) / 2
           + (ℓ : ℝ) ^ 2 * (m : ℝ) := by
-    have hfdeg : f.natDegree = m := by simp [hm_def]
-    have h1 : ((f.natDegree * q : ℕ) : ℝ) = (m : ℝ) * (q : ℝ) := by
-      simp [hfdeg, Nat.cast_mul, mul_comm]
-    have h2 : ((ℓ * q : ℕ) : ℝ) = (ℓ : ℝ) * (q : ℝ) := by
-      simp [Nat.cast_mul, mul_comm]
-    have h3 : ((ℓ * ℓ * f.natDegree : ℕ) : ℝ)
-        = (ℓ : ℝ) ^ 2 * (m : ℝ) := by
-      simp [hfdeg, Nat.cast_mul, pow_two, mul_comm]
-    simpa [h1, h2, h3] using hdegR
+    simpa [m, hm_def, pow_two, mul_assoc, mul_left_comm, mul_comm] using hdegR
   have hdegR_upper :
       (R.natDegree : ℝ)
         < (ℓ : ℝ) * (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) ^ 2 := by
@@ -322,15 +311,12 @@ by
       cases xb.2 <;> simp [yval, this, neg_sq]⟩
   have hφ_inj : Function.Injective φ := by
     rintro ⟨x, b⟩ ⟨x', b'⟩ h
-    have hpair : (x.1, yval x b) = (x'.1, yval x' b') :=
-      congrArg Subtype.val h
-    have hxval : x.1 = x'.1 := by simpa using congrArg Prod.fst hpair
     have hx : x = x' := by
       apply Subtype.ext
-      exact hxval
+      simpa using congrArg Prod.fst (congrArg Subtype.val h)
     subst hx
     have hy : yval x b = yval x b' := by
-      simpa using congrArg Prod.snd hpair
+      simpa using congrArg Prod.snd (congrArg Subtype.val h)
     have hroot_ne : root x ≠ 0 := by
       intro h0
       have : Polynomial.eval x.1 f = 0 := by simpa [h0] using hroot x
@@ -340,34 +326,27 @@ by
       have hadd : root x + root x = 0 := by
         calc
           root x + root x = root x + (-root x) := by
-            exact congrArg (fun t => root x + t) hneg
+            simpa using congrArg (fun t => root x + t) hneg
           _ = 0 := by simp
-      have hmul : (2 : F) * root x = 0 := by
-        simpa [two_mul] using hadd
-      rcases mul_eq_zero.mp hmul with h2 | hx0
-      · exact htwo_ne h2
-      · exact hroot_ne hx0
+      have hmul : (2 : F) * root x = 0 := by simpa [two_mul] using hadd
+      exact (mul_ne_zero htwo_ne hroot_ne) hmul
     cases b <;> cases b'
     · rfl
     ·
-      have hy' : -root x = root x := by simpa [yval] using hy
-      have : root x = -root x := by
-        simpa using congrArg Neg.neg hy'
-      exact False.elim (hroot_ne_neg this)
+      exfalso
+      have : -root x = root x := by simpa [yval] using hy
+      exact hroot_ne_neg this.symm
     ·
+      exfalso
       have : root x = -root x := by simpa [yval] using hy
-      exact False.elim (hroot_ne_neg this)
+      exact hroot_ne_neg this
     · rfl
-  have hcount_nat : 2 * Fintype.card N1 ≤ Fintype.card C := by
-    have hcount' : Fintype.card (N1 × Bool) ≤ Fintype.card C :=
-      Fintype.card_le_of_injective φ hφ_inj
-    have hprod : Fintype.card (N1 × Bool) = 2 * Fintype.card N1 := by
-      simp [Fintype.card_prod, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
-    simpa [hprod] using hcount'
-  have hcount_real : ((2 * Fintype.card N1 : ℕ) : ℝ) ≤ (Fintype.card C : ℝ) := by
-    exact_mod_cast hcount_nat
   have hcount_real' : (2 : ℝ) * (Fintype.card N1 : ℝ) ≤ (Fintype.card C : ℝ) := by
-    simpa [Nat.cast_mul] using hcount_real
+    have hcount_nat : Fintype.card (N1 × Bool) ≤ Fintype.card C :=
+      Fintype.card_le_of_injective φ hφ_inj
+    have hcount_real : (Fintype.card (N1 × Bool) : ℝ) ≤ (Fintype.card C : ℝ) := by
+      exact_mod_cast hcount_nat
+    simpa [Fintype.card_prod, Nat.cast_mul, mul_assoc, mul_left_comm, mul_comm] using hcount_real
   -- unfold local notation back to the statement
   simpa [C, N1, hc_def, ge_iff_le, two_mul, mul_assoc, mul_left_comm, mul_comm] using hcount_real'
 

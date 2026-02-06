@@ -40,49 +40,30 @@ by
       Polynomial.C (algebraMap F K f₀) := by
     rw [← Polynomial.C_mul, ← hα]
   have hg_sq : g * g = algebraMap (Polynomial K) L fK := by
-    simp only [g]
+    have hr2_ne : algebraMap (Polynomial K) L (rK * rK) ≠ 0 := by
+      simpa [map_mul] using mul_ne_zero hrK_ne_alg hrK_ne_alg
+    have hnum : sK * Polynomial.C α * (sK * Polynomial.C α) = rK * rK * fK := by
+      calc
+        sK * Polynomial.C α * (sK * Polynomial.C α)
+            = sK * sK * (Polynomial.C α * Polynomial.C α) := by ring
+        _ = sK * sK * Polynomial.C (algebraMap F K f₀) := by simp [hCα_sq]
+        _ = rK * rK * fK := by
+          simpa [mul_assoc, mul_left_comm, mul_comm] using heqK.symm
     calc
-      algebraMap (Polynomial K) L sK / algebraMap (Polynomial K) L rK *
-              algebraMap (Polynomial K) L (Polynomial.C α) *
-            (algebraMap (Polynomial K) L sK / algebraMap (Polynomial K) L rK *
-              algebraMap (Polynomial K) L (Polynomial.C α))
-          =
-            (algebraMap (Polynomial K) L sK *
-                  algebraMap (Polynomial K) L (Polynomial.C α) /
-                algebraMap (Polynomial K) L rK) *
-              (algebraMap (Polynomial K) L sK *
-                  algebraMap (Polynomial K) L (Polynomial.C α) /
-                algebraMap (Polynomial K) L rK) := by
-              ring
+      g * g =
+          algebraMap (Polynomial K) L (sK * Polynomial.C α * (sK * Polynomial.C α)) /
+            algebraMap (Polynomial K) L (rK * rK) := by
+          -- unfold `g` and clear denominators in the fraction field
+          simp [g, map_mul, mul_assoc, mul_left_comm, mul_comm]
+          ring
       _ =
-            (algebraMap (Polynomial K) L sK *
-                algebraMap (Polynomial K) L (Polynomial.C α)) *
-              (algebraMap (Polynomial K) L sK *
-                algebraMap (Polynomial K) L (Polynomial.C α)) /
-              (algebraMap (Polynomial K) L rK *
-                algebraMap (Polynomial K) L rK) := by
-              rw [div_mul_div_comm]
-      _ =
-            algebraMap (Polynomial K) L
-                (sK * Polynomial.C α * (sK * Polynomial.C α)) /
-              algebraMap (Polynomial K) L (rK * rK) := by
-              simp only [← map_mul]
-      _ =
-            algebraMap (Polynomial K) L (rK * rK * fK) /
-              algebraMap (Polynomial K) L (rK * rK) := by
-              congr 2
-              calc
-                sK * Polynomial.C α * (sK * Polynomial.C α)
-                    = sK * sK * (Polynomial.C α * Polynomial.C α) := by
-                      ring
-                _ = rK * rK * fK := by
-                      rw [hCα_sq, heqK.symm]
+          algebraMap (Polynomial K) L (rK * rK * fK) / algebraMap (Polynomial K) L (rK * rK) := by
+          simpa [hnum]
       _ = algebraMap (Polynomial K) L fK := by
-              rw [map_mul, mul_comm, mul_div_assoc,
-                div_self (by
-                  rw [map_mul]
-                  exact mul_ne_zero hrK_ne_alg hrK_ne_alg),
-                mul_one]
+          -- cancel the nonzero factor `rK * rK`
+          simpa [map_mul, mul_assoc] using
+            (mul_div_cancel_left₀ (b := algebraMap (Polynomial K) L fK)
+              (a := algebraMap (Polynomial K) L (rK * rK)) hr2_ne)
   obtain ⟨h, hh⟩ :=
     IsIntegrallyClosed.algebraMap_eq_of_integral <|
       IsIntegral.of_pow (by norm_num)
@@ -272,11 +253,9 @@ lemma stepanov_nonzero_polynomial_equality
 by
   obtain ⟨k, hk⟩ : ∃ k, q = 2 * k + 1 := by
     refine (Nat.odd_iff.mpr ?_)
-    simpa [hq] using
-      (FiniteField.odd_card_of_char_ne_two (F := F) hF)
+    simpa [hq] using (FiniteField.odd_card_of_char_ne_two (F := F) hF)
   have h2c1 : 2 * c + 1 = q := by
-    have hq_pos : 0 < q := by
-      simpa [hq] using (Fintype.card_pos (α := F))
+    have hq_pos : 0 < q := by simpa [hq] using (Fintype.card_pos (α := F))
     have h2_dvd : 2 ∣ q - 1 := by
       refine ⟨k, ?_⟩
       have := congrArg (fun n => n - 1) hk
@@ -284,86 +263,72 @@ by
     have h2c : 2 * c = q - 1 := by
       simpa [hc, Nat.mul_comm] using
         (Nat.div_two_mul_two_of_even ((even_iff_two_dvd).2 h2_dvd))
-    simpa [h2c, Nat.add_comm] using
-      (Nat.sub_add_cancel (Nat.succ_le_of_lt hq_pos))
+    simpa [h2c, Nat.add_comm] using (Nat.sub_add_cancel (Nat.succ_le_of_lt hq_pos))
   have hdiv1 : Polynomial.X ^ q ∣ r * r - (s * f ^ c) * (s * f ^ c) := by
     have htmp : Polynomial.X ^ q ∣ (r + s * f ^ c) * (r - s * f ^ c) :=
       dvd_mul_of_dvd_left hcong (r - s * f ^ c)
     have hdsq :
         (r + s * f ^ c) * (r - s * f ^ c) =
           r * r - (s * f ^ c) * (s * f ^ c) := by
-      simpa [sub_eq_add_neg, add_comm, add_left_comm, add_assoc,
-        mul_comm, mul_left_comm, mul_assoc] using
+      simpa [sub_eq_add_neg, add_comm, add_left_comm, add_assoc, mul_comm, mul_left_comm, mul_assoc] using
         (mul_self_sub_mul_self (a := r) (b := s * f ^ c)).symm
     simpa [hdsq] using htmp
+  have hpow : f ^ c * f ^ c * f = f ^ (2 * c + 1) := by
+    have : f ^ c * f ^ c * f = f ^ (c + c + 1) := by
+      simp [pow_add, pow_succ, mul_comm]
+    simpa [two_mul, Nat.add_assoc] using this
   have hdiv2 : Polynomial.X ^ q ∣ r * r * f - s * s * f ^ (2 * c + 1) := by
     have htmp : Polynomial.X ^ q ∣ f * (r * r - (s * f ^ c) * (s * f ^ c)) :=
       dvd_mul_of_dvd_right hdiv1 f
-    have hpow : f ^ c * f ^ c * f = f ^ (2 * c + 1) := by
-      have : f ^ c * f ^ c * f = f ^ (c + c + 1) := by
-        simp [pow_add, pow_succ, mul_comm]
-      simpa [two_mul, Nat.add_assoc] using this
     have hrewrite :
         f * (r * r - (s * f ^ c) * (s * f ^ c)) =
           r * r * f - s * s * f ^ (2 * c + 1) := by
+      -- a straightforward distributivity + regrouping step
       calc
-        f * (r * r - (s * f ^ c) * (s * f ^ c))
-            = f * (r * r) - f * ((s * f ^ c) * (s * f ^ c)) := by
-                simp [mul_sub]
-        _ = r * r * f - s * s * (f ^ c * f ^ c) * f := by
-                simp [mul_comm, mul_left_comm, mul_assoc]
+        f * (r * r - (s * f ^ c) * (s * f ^ c)) =
+            f * (r * r) - f * ((s * f ^ c) * (s * f ^ c)) := by
+              simp [mul_sub]
         _ = r * r * f - s * s * (f ^ c * f ^ c * f) := by
-                simp [mul_comm, mul_left_comm, mul_assoc]
+              simp [mul_assoc, mul_left_comm, mul_comm]
         _ = r * r * f - s * s * f ^ (2 * c + 1) := by
-                simp [hpow, mul_comm, mul_assoc]
+              simp [hpow, mul_assoc]
     simpa [hrewrite] using htmp
-  have hdiv3 : Polynomial.X ^ q ∣
-      s * s * f ^ q - s * s * Polynomial.C (f.eval 0) := by
+  have hdiv2' : Polynomial.X ^ q ∣ r * r * f - s * s * f ^ q := by
+    simpa [h2c1] using hdiv2
+  have hdiv3 : Polynomial.X ^ q ∣ s * s * f ^ q - s * s * Polynomial.C (f.eval 0) := by
     simpa [mul_sub, mul_comm, mul_left_comm, mul_assoc] using
       (dvd_mul_of_dvd_right
         (stepanov_nonzero_frobenius_mod (F := F) (f := f) (q := q) hq) (s * s))
-  have hdiv_final : Polynomial.X ^ q ∣
-      r * r * f - s * s * Polynomial.C (f.eval 0) := by
-    have hdiv2' : Polynomial.X ^ q ∣ r * r * f - s * s * f ^ q := by
-      simpa [h2c1] using hdiv2
+  have hdiv_final : Polynomial.X ^ q ∣ r * r * f - s * s * Polynomial.C (f.eval 0) := by
     have h := dvd_add hdiv2' hdiv3
-    simpa [sub_eq_add_neg, add_comm, add_left_comm, add_assoc,
-      mul_comm, mul_left_comm, mul_assoc] using h
+    simpa [sub_eq_add_neg, add_comm, add_left_comm, add_assoc, mul_comm, mul_left_comm, mul_assoc] using h
   have hdeg_r2f_lt : (r * r * f).natDegree < q := by
     refine lt_of_le_of_lt ?_ hrdeg
-    refine
-      (Polynomial.natDegree_mul_le (p := r * r) (q := f)).trans ?_
     have h2 : (r * r).natDegree ≤ 2 * r.natDegree := by
       simpa [two_mul] using (Polynomial.natDegree_mul_le (p := r) (q := r))
-    simpa [hfdeg, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
-      Nat.add_le_add_right h2 m
-  have hdeg_s2C_lt :
-      (s * s * Polynomial.C (f.eval 0)).natDegree < q := by
-    have h2s_lt_q : 2 * s.natDegree < q := by
+    have hle : (r * r * f).natDegree ≤ 2 * r.natDegree + m := by
       have :=
-        lt_of_le_of_lt
-          (Nat.add_le_add_left (Nat.zero_le m) (2 * s.natDegree)) hsdeg
-      simpa using this
+        (Polynomial.natDegree_mul_le (p := r * r) (q := f)).trans
+          (Nat.add_le_add_right h2 _)
+      simpa [hfdeg, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
+    exact hle
+  have h2s_lt_q : 2 * s.natDegree < q :=
+    lt_of_le_of_lt (Nat.le_add_right (2 * s.natDegree) m) hsdeg
+  have hdeg_s2C_lt : (s * s * Polynomial.C (f.eval 0)).natDegree < q := by
     refine lt_of_le_of_lt ?_ h2s_lt_q
-    refine
-      (Polynomial.natDegree_mul_le (p := s * s)
-        (q := Polynomial.C (f.eval 0))).trans ?_
     have h2 : (s * s).natDegree ≤ 2 * s.natDegree := by
       simpa [two_mul] using (Polynomial.natDegree_mul_le (p := s) (q := s))
-    have hC : (Polynomial.C (f.eval 0 : F)).natDegree = 0 := by simp
-    simpa [hC, Nat.add_comm] using h2
+    simpa [Polynomial.natDegree_C, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+      (Polynomial.natDegree_mul_le (p := s * s) (q := Polynomial.C (f.eval 0))).trans
+        (Nat.add_le_add_right h2 _)
   have hdeg_diff_lt :
       (r * r * f - s * s * Polynomial.C (f.eval 0)).natDegree < q := by
-    have hdeg_diff_le :
+    have hle :
         (r * r * f - s * s * Polynomial.C (f.eval 0)).natDegree ≤
-          max (r * r * f).natDegree
-            (s * s * Polynomial.C (f.eval 0)).natDegree := by
+          max (r * r * f).natDegree (s * s * Polynomial.C (f.eval 0)).natDegree := by
       simpa [sub_eq_add_neg] using
-        (Polynomial.natDegree_add_le (p := r * r * f)
-          (q := -(s * s * Polynomial.C (f.eval 0))))
-    exact
-      lt_of_le_of_lt hdeg_diff_le
-        (max_lt_iff.mpr ⟨hdeg_r2f_lt, hdeg_s2C_lt⟩)
+        (Polynomial.natDegree_add_le (p := r * r * f) (q := -(s * s * Polynomial.C (f.eval 0))))
+    exact lt_of_le_of_lt hle (max_lt_iff.mpr ⟨hdeg_r2f_lt, hdeg_s2C_lt⟩)
   have hdiff_zero : r * r * f - s * s * Polynomial.C (f.eval 0) = 0 := by
     refine Polynomial.eq_zero_of_dvd_of_natDegree_lt hdiv_final ?_
     simpa [Polynomial.natDegree_X_pow] using hdeg_diff_lt
@@ -520,31 +485,12 @@ by
         simpa [g, shift] using hfa_ne
       have hgdeg : g.natDegree = m := by
         simp [g, shift, hfdeg, Polynomial.natDegree_comp]
-      have hmap_g :
-          Polynomial.map (algebraMap F (AlgebraicClosure F)) g =
-            (Polynomial.map (algebraMap F (AlgebraicClosure F)) f).comp
-              (Polynomial.X +
-                Polynomial.C (algebraMap F (AlgebraicClosure F) a)) := by
-        unfold g shift
-        have h :=
-          Polynomial.map_comp (algebraMap F (AlgebraicClosure F)) f
-            (Polynomial.X + Polynomial.C a)
-        have hshift :
-            Polynomial.map (algebraMap F (AlgebraicClosure F))
-                (Polynomial.X + Polynomial.C a : Polynomial F) =
-              (Polynomial.X +
-                Polynomial.C (algebraMap F (AlgebraicClosure F) a)
-                  : Polynomial (AlgebraicClosure F)) := by
-          simp [Polynomial.map_add, Polynomial.map_X, Polynomial.map_C]
-        simpa [hshift] using h
       have hnsq_g :
           ¬ ∃ h : Polynomial (AlgebraicClosure F),
-              h * h =
-                Polynomial.map (algebraMap F (AlgebraicClosure F)) g := by
-        have hnsq_shifted :=
-          stepanov_nonzero_shift_preserves (F := F) (f := f)
-            (a := algebraMap F (AlgebraicClosure F) a) hnsq
-        simpa [hmap_g] using hnsq_shifted
+              h * h = Polynomial.map (algebraMap F (AlgebraicClosure F)) g := by
+        simpa [g, shift, Polynomial.map_comp] using
+          (stepanov_nonzero_shift_preserves (F := F) (f := f)
+            (a := algebraMap F (AlgebraicClosure F) a) hnsq)
       have hdeg_shifted :
           ∀ j < J,
             (rj' j).natDegree ≤ Nat.ceil (((q : ℚ) - m) / 2) - 1 ∧
@@ -558,45 +504,22 @@ by
                   ((rj' j) + (sj' j) * g ^ c) * shift ^ (j * q)) = 0 := by
         simpa [shift, g, rj', sj'] using
           congrArg (fun p : Polynomial F => p.comp shift) hsum
-      have hshift_pow :
-          ∀ j : ℕ,
-            shift ^ (j * q) =
-              (Polynomial.X ^ q + Polynomial.C a : Polynomial F) ^ j := by
-        intro j
-        have h1 : shift ^ (j * q) = (shift ^ q) ^ j := by
-          simpa [Nat.mul_comm] using (pow_mul shift q j)
-        have h2 :
-            shift ^ q = (Polynomial.X ^ q + Polynomial.C a : Polynomial F) := by
-          have h :=
-            (FiniteField.expand_card
-                (Polynomial.X + Polynomial.C a : Polynomial F)).symm
-          simpa [shift, hq, map_add, Polynomial.expand_X, Polynomial.expand_C] using h
-        simp [h1, h2]
-      have hg2 :
-          g ^ ℓ *
-              Finset.sum (Finset.range J)
-                (fun j =>
-                  ((rj' j) + (sj' j) * g ^ c) *
-                    (Polynomial.X ^ q + Polynomial.C a : Polynomial F) ^ j) =
-            0 := by
-        have hsum_eq :
-            Finset.sum (Finset.range J)
-                (fun j =>
-                  ((rj' j) + (sj' j) * g ^ c) * shift ^ (j * q)) =
-              Finset.sum (Finset.range J)
-                (fun j =>
-                  ((rj' j) + (sj' j) * g ^ c) *
-                    (Polynomial.X ^ q + Polynomial.C a : Polynomial F) ^ j) := by
-          refine Finset.sum_congr rfl ?_
-          intro j hj
-          simp [hshift_pow j]
-        simpa [hsum_eq] using hg1
       let t : Polynomial F := Polynomial.X ^ q + Polynomial.C a
+      have hshift_q : shift ^ q = t := by
+        have hexpand : Polynomial.expand F q shift = t := by
+          simpa [t, shift] using (map_add (Polynomial.expand F q) Polynomial.X (Polynomial.C a))
+        have h' : shift ^ q = Polynomial.expand F q shift := by
+          simpa [hq.symm, shift] using (FiniteField.expand_card (shift : Polynomial F)).symm
+        exact h'.trans hexpand
+      have hg2' :
+          g ^ ℓ *
+              (∑ j ∈ Finset.range J, ((rj' j) + (sj' j) * g ^ c) * t ^ j) = 0 := by
+        -- rewrite `shift ^ (j*q)` as `(shift^q)^j`, then use `shift^q = t`.
+        simpa [t, Nat.mul_comm, pow_mul, hshift_q] using hg1
       let sum_total : Polynomial F :=
-        ∑ j ∈ Finset.range J,
-          ((rj' j) + (sj' j) * g ^ c) * t ^ j
-      have hg2' : g ^ ℓ * sum_total = 0 := by
-        simpa [t, sum_total] using hg2
+        ∑ j ∈ Finset.range J, ((rj' j) + (sj' j) * g ^ c) * t ^ j
+      have hg2'' : g ^ ℓ * sum_total = 0 := by
+        simpa [sum_total] using hg2'
       let sum_r : Polynomial F :=
         ∑ j ∈ Finset.range J, rj' j * t ^ j
       let sum_s_base : Polynomial F :=
@@ -642,51 +565,33 @@ by
               Finset.sum (Finset.range J)
                 (fun k =>
                   (R k + S k * g ^ c) * Polynomial.X ^ (k * q)) = 0 := by
-        simpa [sum_total, hsum_total_eq] using hg2'
+        simpa [sum_total, hsum_total_eq] using hg2''
       have hdeg_RS :
           ∀ k < J,
             (R k).natDegree ≤ Nat.ceil (((q : ℚ) - m) / 2) - 1 ∧
             (S k).natDegree ≤ Nat.ceil (((q : ℚ) - m) / 2) - 1 := by
         intro k hk
-        refine ⟨?_, ?_⟩
+        constructor
         · simpa [R] using
-            coefficient_transformation_degree_bound
-              (F := F) (a := a) (J := J)
-              (d := Nat.ceil (((q : ℚ) - m) / 2) - 1)
-              (A := rj')
-              (hdeg := fun j hj => (hdeg_shifted j hj).1)
-              k hk
+            coefficient_transformation_degree_bound (F := F) (a := a) (J := J)
+              (d := Nat.ceil (((q : ℚ) - m) / 2) - 1) (A := rj')
+              (hdeg := fun j hj => (hdeg_shifted j hj).1) k hk
         · simpa [S] using
-            coefficient_transformation_degree_bound
-              (F := F) (a := a) (J := J)
-              (d := Nat.ceil (((q : ℚ) - m) / 2) - 1)
-              (A := sj')
-              (hdeg := fun j hj => (hdeg_shifted j hj).2)
-              k hk
+            coefficient_transformation_degree_bound (F := F) (a := a) (J := J)
+              (d := Nat.ceil (((q : ℚ) - m) / 2) - 1) (A := sj')
+              (hdeg := fun j hj => (hdeg_shifted j hj).2) k hk
       have hstep_g : ∀ k < J, R k = 0 ∧ S k = 0 :=
         (stepanov_nonzero_eval_zero (F := F) (hF := hF)
           (f := g) (q := q) (m := m) (ℓ := ℓ) (J := J) (c := c)
           (hc := hc) (hq := hq) (hfdeg := hgdeg) (hm_pos := hm_pos)
           (hq6m := hq6m) (hf0 := hg0_ne)
           (rj := R) (sj := S) (hnsq := hnsq_g) (hdeg := hdeg_RS)).mp hg3
-      have hR_eq_zero :
-          ∀ k < J,
-            ∑ j ∈ Finset.Ico k J,
-                (Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * rj' j = 0 :=
-        fun k hk => by
-          simpa [R] using (hstep_g k hk).1
-      have hS_eq_zero :
-          ∀ k < J,
-            ∑ j ∈ Finset.Ico k J,
-                (Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * sj' j = 0 :=
-        fun k hk => by
-          simpa [S] using (hstep_g k hk).2
       have hrj'_zero : ∀ j < J, rj' j = 0 :=
-        triangular_inversion_shift (F := F) (a := a) (J := J)
-          (A := rj') hR_eq_zero
+        triangular_inversion_shift (F := F) (a := a) (J := J) (A := rj') (fun k hk => by
+          simpa [R] using (hstep_g k hk).1)
       have hsj'_zero : ∀ j < J, sj' j = 0 :=
-        triangular_inversion_shift (F := F) (a := a) (J := J)
-          (A := sj') hS_eq_zero
+        triangular_inversion_shift (F := F) (a := a) (J := J) (A := sj') (fun k hk => by
+          simpa [S] using (hstep_g k hk).2)
       intro j hj
       have hrj_comp_zero : (rj j).comp (Polynomial.X + Polynomial.C a) = 0 := by
         simpa [rj', shift] using hrj'_zero j hj

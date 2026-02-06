@@ -28,42 +28,22 @@ by
   have h6mq : 6 * m < q := by simpa [hm_def] using hq6m
   have hq_pos_nat : 0 < q := lt_of_le_of_lt (Nat.zero_le _) h6mq
   let c : ℕ := (q - 1) / 2
-  have hc : c = (q - 1) / 2 := rfl
   let d : ℕ := Nat.ceil (((q : ℚ) - m) / 2) - 1
-  have hd : d = Nat.ceil (((q : ℚ) - m) / 2) - 1 := rfl
   set Jreal : ℚ := (ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ) with hJreal_def
   set J : ℕ := Nat.ceil Jreal with hJ_def
   have hJ_expr_pos :
       0 < (ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ) := by
-    have hhalf_pos : (0 : ℚ) < (ℓ : ℚ) / 2 :=
-      div_pos (by exact_mod_cast hℓ_pos) (by norm_num)
-    have hdiv_nonneg :
-        (0 : ℚ) ≤ (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ) :=
-      div_nonneg
-        (mul_nonneg (pow_two_nonneg _) (by exact_mod_cast (Nat.zero_le m)))
-        (le_of_lt (by exact_mod_cast hq_pos_nat))
-    exact add_pos_of_pos_of_nonneg hhalf_pos hdiv_nonneg
+    have hℓ_posQ : (0 : ℚ) < (ℓ : ℚ) := by exact_mod_cast hℓ_pos
+    have hq_posQ : (0 : ℚ) < (q : ℚ) := by exact_mod_cast hq_pos_nat
+    positivity
   have hJ_pos :
       1 ≤ Nat.ceil ((ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ)) :=
     Nat.one_le_ceil_iff.mpr hJ_expr_pos
-  have h_system' :
-      ∃ rj sj : ℕ → Polynomial F,
-        (∃ j < J, rj j ≠ 0 ∨ sj j ≠ 0) ∧
-        (∀ j < J, (rj j).natDegree ≤ d ∧ (sj j).natDegree ≤ d) ∧
-        (∀ x : F, f.eval x ≠ 0 → (f.eval x) ^ c = a →
-          ∀ k < ℓ,
-            Finset.sum (Finset.range J)
-              (fun j =>
-                (((hasseDerivOp F k (f ^ ℓ * rj j)) / f ^ (ℓ - k)).eval x +
-                    a *
-                      ((hasseDerivOp F k (f ^ (ℓ + c) * sj j)) /
-                          f ^ (ℓ + c - k)).eval x) *
-                  x ^ j) = 0) := by
-    simpa [d, hd, J, hJ_def, Jreal, hJreal_def, c, hc] using
+  obtain ⟨rj, sj, hnz, hdeg, hvan⟩ := by
+    simpa [d, J, hJ_def, Jreal, hJreal_def, c] using
       (stepanov_system_has_solution
         (F := F) (f := f) (q := q) (m := m) (ℓ := ℓ) (a := a)
         hq hfdeg hm_ge_two hm_pos hℓ_pos (by simpa [hm_def] using hq6m) hl hJ_pos)
-  rcases h_system' with ⟨rj, sj, hnz, hdeg, hvan⟩
   set R : Polynomial F :=
     f ^ ℓ *
       Finset.sum (Finset.range J)
@@ -75,7 +55,7 @@ by
       (stepanov_constructed_nonzero
         (F := F) (hF := hF) (f := f) (q := q) (m := m) (ℓ := ℓ)
         (J := J) (c := c) (d := d)
-        hq hfdeg hc hm_pos (by simpa [hm_def] using hq6m) hd hnsq rj sj (by
+        hq hfdeg (by rfl) hm_pos (by simpa [hm_def] using hq6m) (by rfl) hnsq rj sj (by
           intro j hj; exact ⟨hdegr j hj, hdegs j hj⟩) hnz)
   have hdeg_nat_le :
       R.natDegree ≤ ℓ * m + d + c * m + (J - 1) * q := by
@@ -98,110 +78,61 @@ by
     simpa [core, add_assoc] using hdeg_le_coreJ
   have hq_pos : (0 : ℚ) < (q : ℚ) := by exact_mod_cast hq_pos_nat
   have hm_pos' : (0 : ℚ) < (m : ℚ) := by exact_mod_cast hm_pos
-  have hℓ_le_q_div3 : (ℓ : ℚ) ≤ (q : ℚ) / 3 := by
-    have h1 : (ℓ : ℚ) ≤ ((q / 3 : ℕ) : ℚ) := by exact_mod_cast hl
-    exact le_trans h1 (by simpa using (Nat.cast_div_le (α := ℚ) (m := q) (n := 3)))
+  have hℓ_le_q3 : (ℓ : ℚ) ≤ (q : ℚ) / 3 := by
+    have : (ℓ : ℚ) ≤ ((q / 3 : ℕ) : ℚ) := by exact_mod_cast hl
+    exact this.trans (by simpa using (Nat.cast_div_le (α := ℚ) (m := q) (n := 3)))
   have hℓm_le : (ℓ : ℚ) * (m : ℚ) ≤ (q : ℚ) / 3 * (m : ℚ) :=
-    mul_le_mul_of_nonneg_right hℓ_le_q_div3 (le_of_lt hm_pos')
-  have hx1_le_hx2 : (((q : ℚ) - (m : ℚ)) / 2) ≤ (q : ℚ) / 2 := by
-    simpa [sub_eq_add_neg] using
-      (div_le_div_of_nonneg_right
-        (sub_le_self _ (by exact_mod_cast (Nat.zero_le m))) (by norm_num))
-  have hceil_le :
-      Nat.ceil (((q : ℚ) - (m : ℚ)) / 2)
-        ≤ Nat.ceil ((q : ℚ) / 2) :=
-    Nat.ceil_le_ceil hx1_le_hx2
-  have hd_le_ceil_x1 :
-      d ≤ Nat.ceil (((q : ℚ) - (m : ℚ)) / 2) := by
-    simp [hd]
-  have hd_le_ceil_x2 : d ≤ Nat.ceil ((q : ℚ) / 2) :=
-    le_trans hd_le_ceil_x1 hceil_le
+    mul_le_mul_of_nonneg_right hℓ_le_q3 (le_of_lt hm_pos')
   have hd_le : (d : ℚ) ≤ (q : ℚ) / 2 + 1 := by
+    have hx :
+        Nat.ceil (((q : ℚ) - (m : ℚ)) / 2)
+          ≤ Nat.ceil ((q : ℚ) / 2) := by
+      refine Nat.ceil_le_ceil ?_
+      nlinarith
+    have hd_le_ceil : d ≤ Nat.ceil ((q : ℚ) / 2) := by
+      have : d ≤ Nat.ceil (((q : ℚ) - (m : ℚ)) / 2) := by
+        simpa [d] using (Nat.sub_le (Nat.ceil (((q : ℚ) - (m : ℚ)) / 2)) 1)
+      exact this.trans hx
     have hx2_nonneg : (0 : ℚ) ≤ (q : ℚ) / 2 :=
       div_nonneg (le_of_lt hq_pos) (by norm_num)
-    exact le_trans (by exact_mod_cast hd_le_ceil_x2)
-      (le_of_lt (Nat.ceil_lt_add_one hx2_nonneg))
-  have h2c_le_q1_nat : 2 * c ≤ q - 1 := by
-    simpa [c, hc, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
-      (Nat.div_mul_le_self (q - 1) 2)
-  have h2c_le_q1 : (2 : ℚ) * (c : ℚ) ≤ (q : ℚ) - 1 := by
-    have hq_ge_one : 1 ≤ q := Nat.succ_le_of_lt hq_pos_nat
-    simpa [Nat.cast_mul, Nat.cast_sub hq_ge_one, mul_comm, mul_left_comm, mul_assoc] using
-      (show ((2 * c : ℕ) : ℚ) ≤ ((q - 1 : ℕ) : ℚ) from by exact_mod_cast h2c_le_q1_nat)
+    have : (d : ℚ) ≤ (Nat.ceil ((q : ℚ) / 2) : ℚ) := by exact_mod_cast hd_le_ceil
+    exact this.trans (le_of_lt (Nat.ceil_lt_add_one hx2_nonneg))
   have hc_le : (c : ℚ) ≤ ((q : ℚ) - 1) / 2 := by
-    have h2pos : (0 : ℚ) < 2 := by norm_num
-    linarith [h2c_le_q1, h2pos]
+    have hq_ge_one : 1 ≤ q := Nat.succ_le_of_lt hq_pos_nat
+    simpa [c, Nat.cast_sub hq_ge_one] using (Nat.cast_div_le (α := ℚ) (m := q - 1) (n := 2))
   have hcm_le : (c : ℚ) * (m : ℚ)
       ≤ ((q : ℚ) - 1) / 2 * (m : ℚ) :=
     mul_le_mul_of_nonneg_right hc_le (le_of_lt hm_pos')
-  have h_d_add_c :
-      (d : ℚ) + (c : ℚ) * (m : ℚ)
-        ≤ (q : ℚ) / 2 + 1 + ((q : ℚ) - 1) / 2 * (m : ℚ) :=
-    add_le_add hd_le hcm_le
-  have hcore_le :
-      core ≤ (q : ℚ) / 3 * (m : ℚ) + (q : ℚ) / 2 + 1
-                + ((q : ℚ) - 1) / 2 * (m : ℚ) := by
-    simpa [core, add_comm, add_left_comm, add_assoc,
-      mul_comm, mul_left_comm, mul_assoc] using (add_le_add hℓm_le h_d_add_c)
-  let B2 : ℚ :=
-    (q : ℚ) / 3 * (m : ℚ) + (q : ℚ) / 2 + 1
-      + ((q : ℚ) - 1) / 2 * (m : ℚ)
+  set B2 : ℚ :=
+      (q : ℚ) / 3 * (m : ℚ) + (q : ℚ) / 2 + 1 + ((q : ℚ) - 1) / 2 * (m : ℚ) with hB2_def
   have hcore_le_B2 : core ≤ B2 := by
-    simpa [B2, add_comm, add_left_comm, add_assoc] using hcore_le
-  have h_num_pos :
-      0 < (q : ℚ) * ((m : ℚ) - 3) + 3 * ((m : ℚ) - 2) := by
-    refine add_pos_of_nonneg_of_pos ?_ ?_
-    · exact mul_nonneg (le_of_lt hq_pos) (sub_nonneg.mpr (by exact_mod_cast hm3'))
-    · have hm_gt2_nat : 2 < m := lt_of_lt_of_le (by decide : 2 < 3) hm3'
-      exact mul_pos (by norm_num) (sub_pos.mpr (by exact_mod_cast hm_gt2_nat))
-  have h_eq :
-      6 * ((m : ℚ) * (q : ℚ) - B2)
-        = (q : ℚ) * ((m : ℚ) - 3) + 3 * ((m : ℚ) - 2) := by
-    simpa [B2] using (by ring :
-      6 * ((m : ℚ) * (q : ℚ) -
-            ((q : ℚ) / 3 * (m : ℚ) + (q : ℚ) / 2 + 1
-              + ((q : ℚ) - 1) / 2 * (m : ℚ)))
-        = (q : ℚ) * ((m : ℚ) - 3) + 3 * ((m : ℚ) - 2))
-  have h6Δ_pos : 0 < 6 * ((m : ℚ) * (q : ℚ) - B2) := by
-    simpa [h_eq] using h_num_pos
-  have hΔ_pos : 0 < (m : ℚ) * (q : ℚ) - B2 := by
-    have h6pos : (0 : ℚ) < 6 := by norm_num
-    linarith [h6Δ_pos, h6pos]
-  have hB2_lt : B2 < (m : ℚ) * (q : ℚ) := sub_pos.mp hΔ_pos
-  have hcore_lt_mq : core < (m : ℚ) * (q : ℚ) :=
-    lt_of_le_of_lt hcore_le_B2 hB2_lt
-  have hcore_lt_mq_addJm1 :
-      core + (Jm1 : ℚ) * (q : ℚ)
-        < (m : ℚ) * (q : ℚ) + (Jm1 : ℚ) * (q : ℚ) :=
-    add_lt_add_right hcore_lt_mq _
-  have hdeg_lt_mqJm1_rat :
-      (R.natDegree : ℚ) < (m : ℚ) * (q : ℚ) + (Jm1 : ℚ) * (q : ℚ) :=
-    lt_of_le_of_lt hdeg_core_le hcore_lt_mq_addJm1
+    have h1 : (ℓ : ℚ) * (m : ℚ) + (d : ℚ) ≤ (q : ℚ) / 3 * (m : ℚ) + ((q : ℚ) / 2 + 1) :=
+      add_le_add hℓm_le hd_le
+    have h2 :
+        (ℓ : ℚ) * (m : ℚ) + (d : ℚ) + (c : ℚ) * (m : ℚ)
+          ≤ (q : ℚ) / 3 * (m : ℚ) + ((q : ℚ) / 2 + 1) + ((q : ℚ) - 1) / 2 * (m : ℚ) :=
+      add_le_add h1 hcm_le
+    simpa [core, B2, hB2_def, add_assoc, add_left_comm, add_comm] using h2
+  have hB2_lt : B2 < (m : ℚ) * (q : ℚ) := by
+    have hm3Q : (3 : ℚ) ≤ (m : ℚ) := by exact_mod_cast hm3'
+    nlinarith [hm3Q, hq_pos]
+  have hcore_lt_mq : core < (m : ℚ) * (q : ℚ) := lt_of_le_of_lt hcore_le_B2 hB2_lt
   have hJreal_nonneg : (0 : ℚ) ≤ Jreal := by
-    have h1 : (0 : ℚ) ≤ (ℓ : ℚ) / 2 :=
-      div_nonneg (by exact_mod_cast (Nat.zero_le ℓ)) (by norm_num)
-    have hnum : (0 : ℚ) ≤ (ℓ : ℚ) ^ 2 * (m : ℚ) := by
-      have hℓsq_nonneg : (0 : ℚ) ≤ (ℓ : ℚ) ^ 2 := by
-        simp
-      exact mul_nonneg hℓsq_nonneg (by exact_mod_cast (Nat.zero_le m))
-    have h2 : (0 : ℚ) ≤ (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ) :=
-      div_nonneg hnum (le_of_lt hq_pos)
-    have := add_nonneg h1 h2
+    have :
+        (0 : ℚ) ≤ (ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ) := by
+      positivity
     simpa [Jreal, hJreal_def] using this
-  have hJm1_le_Jreal : (Jm1 : ℚ) ≤ Jreal := by
-    have hceil_sub : (Nat.ceil Jreal : ℚ) - 1 ≤ Jreal := by
-      have h1 : (Nat.ceil Jreal : ℚ) ≤ Jreal + 1 :=
-        le_of_lt (Nat.ceil_lt_add_one hJreal_nonneg)
-      linarith
-    have hJ_eq : J = Nat.ceil Jreal := by simp [hJ_def]
-    have hJ_ge_one : 1 ≤ J := by
-      simpa [Jreal, hJreal_def, hJ_def] using hJ_pos
+  have hJ_ge_one : 1 ≤ J := by
+    simpa [Jreal, hJreal_def, hJ_def] using hJ_pos
+  have hJm1_lt_Jreal : (Jm1 : ℚ) < Jreal := by
+    have hJ_lt : (J : ℚ) < Jreal + 1 := by
+      simpa [J, hJ_def] using (Nat.ceil_lt_add_one hJreal_nonneg)
     have hJm1_cast : (Jm1 : ℚ) = (J : ℚ) - 1 := by
       simpa [Jm1] using (Nat.cast_sub (R := ℚ) hJ_ge_one)
-    simpa [hJ_def, hJm1_cast] using hceil_sub
-  have hJm1q_le : (Jm1 : ℚ) * (q : ℚ) ≤ Jreal * (q : ℚ) := by
-    exact mul_le_mul_of_nonneg_right hJm1_le_Jreal (le_of_lt hq_pos)
-  have hJrealq_eq :
+    linarith [hJ_lt, hJm1_cast]
+  have hJm1q_le : (Jm1 : ℚ) * (q : ℚ) ≤ Jreal * (q : ℚ) :=
+    le_of_lt (mul_lt_mul_of_pos_right hJm1_lt_Jreal hq_pos)
+  have hJrealq :
       Jreal * (q : ℚ) =
         (ℓ : ℚ) * (q : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) := by
     simp [Jreal, div_eq_mul_inv, mul_add,
@@ -209,18 +140,17 @@ by
   have hJm1q_le_target :
       (Jm1 : ℚ) * (q : ℚ)
         ≤ (ℓ : ℚ) * (q : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) := by
-    simpa [hJrealq_eq] using hJm1q_le
-  have h_total_le :
-      (m : ℚ) * (q : ℚ) + (Jm1 : ℚ) * (q : ℚ)
-        ≤ (m : ℚ) * (q : ℚ)
-          + (ℓ : ℚ) * (q : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) := by
-    simpa [add_assoc] using
-      (add_le_add_left hJm1q_le_target ((m : ℚ) * (q : ℚ)))
+    simpa [hJrealq] using hJm1q_le
   have hdeg_lt_target_Q :
       (R.natDegree : ℚ)
         < (m : ℚ) * (q : ℚ)
-          + (ℓ : ℚ) * (q : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) :=
-    lt_of_lt_of_le hdeg_lt_mqJm1_rat h_total_le
+          + (ℓ : ℚ) * (q : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) := by
+    have :
+        (R.natDegree : ℚ) <
+          (m : ℚ) * (q : ℚ) +
+            ((ℓ : ℚ) * (q : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ)) :=
+      lt_of_le_of_lt hdeg_core_le (add_lt_add_of_lt_of_le hcore_lt_mq hJm1q_le_target)
+    simpa [add_assoc, add_left_comm, add_comm] using this
   have hdeg_lt_target_R :
       (R.natDegree : ℝ)
         < ((m * q : ℕ) : ℝ)

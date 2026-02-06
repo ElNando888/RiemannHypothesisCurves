@@ -143,23 +143,7 @@ lemma stepanov_monotone_in_J
     (hJmono : J₁ ≤ J₂) :
   2 * J₂ * D > ℓ * (J₂ + x) + C :=
 by
-  have hdiff :
-      0 ≤ (2 * J₂ * D - ℓ * (J₂ + x)) - (2 * J₁ * D - ℓ * (J₁ + x)) := by
-    have h : 0 ≤ (J₂ - J₁) * (2 * D - ℓ) :=
-      mul_nonneg (sub_nonneg.mpr hJmono) hD_nonneg
-    have :
-        (2 * J₂ * D - ℓ * (J₂ + x)) - (2 * J₁ * D - ℓ * (J₁ + x)) =
-          (J₂ - J₁) * (2 * D - ℓ) := by
-      ring
-    simpa [this] using h
-  have hmono :
-      2 * J₁ * D - ℓ * (J₁ + x) ≤ 2 * J₂ * D - ℓ * (J₂ + x) := by
-    linarith [hdiff]
-  have hA' : C < 2 * J₁ * D - ℓ * (J₁ + x) := by
-    linarith [hA]
-  have hA'' : C < 2 * J₂ * D - ℓ * (J₂ + x) :=
-    lt_of_lt_of_le hA' hmono
-  linarith [hA'']
+  nlinarith
 
 lemma stepanov_twoD_sub_ell_pos
     (q m ℓ : ℕ) (hq6m : q > 6 * m) (hℓ : ℓ ≤ q / 3) :
@@ -214,7 +198,6 @@ by
       0 < ((ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ)) := by
     have hℓ_posℚ : (0 : ℚ) < (ℓ : ℚ) := by exact_mod_cast hℓ_pos
     have hq_posℚ : (0 : ℚ) < (q : ℚ) := by exact_mod_cast hq_pos_nat
-    have hm_nonnegℚ : (0 : ℚ) ≤ (m : ℚ) := by exact_mod_cast (Nat.zero_le m)
     positivity
   have hJ_pos : 1 ≤ J :=
     (Nat.one_le_ceil_iff
@@ -239,22 +222,14 @@ by
           (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2 :=
     by
       refine lt_of_lt_of_le hB_real_small ?_
-      have hℓ' : (ℓ : ℝ) - 1 ≤ (ℓ : ℝ) := by linarith
-      have hmul :
-          ((ℓ : ℝ) - 1) * ((m : ℝ) - 1) ≤ (ℓ : ℝ) * ((m : ℝ) - 1) :=
-        mul_le_mul_of_nonneg_right hℓ' hm1_nonneg
       have hdiv :
-          (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 ≤
-            (ℓ : ℝ) * ((m : ℝ) - 1) / 2 :=
-        div_le_div_of_nonneg_right hmul (by norm_num : (0 : ℝ) ≤ 2)
+          (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 ≤ (ℓ : ℝ) * ((m : ℝ) - 1) / 2 := by
+        nlinarith [hm1_nonneg]
       have hterm :
           (ℓ : ℝ) * ((((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) ≤
-            (ℓ : ℝ) * ((ℓ : ℝ) * ((m : ℝ) - 1) / 2) :=
-        mul_le_mul_of_nonneg_left hdiv hℓ_nonneg
-      have hsum :=
-        add_le_add_left hterm ((ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2))
-      simpa [mul_add, add_assoc, pow_two, mul_assoc, mul_left_comm, mul_comm, div_eq_mul_inv] using
-        hsum
+            (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2 := by
+        nlinarith [hdiv, hℓ_nonneg]
+      nlinarith [hterm]
   -- switch to a more convenient notation over ℝ
   set Jreal : ℝ :=
       (ℓ : ℝ) / 2 + ((ℓ : ℝ) ^ 2 * (m : ℝ)) / (q : ℝ) with hJreal_def
@@ -281,86 +256,47 @@ by
   -- lower bound on A_real
   have hA_ge : Jreal * ((q : ℝ) - (m : ℝ)) ≤ A_real := by
     have hJreal_nonneg : (0 : ℝ) ≤ Jreal := by
-      have :
-          (0 : ℝ) ≤ (ℓ : ℝ) / 2 + ((ℓ : ℝ) ^ 2 * (m : ℝ)) / (q : ℝ) := by
-        positivity
-      simpa [Jreal, hJreal_def] using this
-    have hmul :
-        (2 * Jreal) * xR ≤ (2 * Jreal) * (Int.ceil xR : ℝ) :=
-      mul_le_mul_of_nonneg_left (Int.le_ceil xR) (mul_nonneg (by norm_num) hJreal_nonneg)
-    have hx_two : (2 : ℝ) * xR = (q : ℝ) - (m : ℝ) := by
-      simp [xR, two_mul, add_halves]
-    have hleft : (2 * Jreal) * xR = Jreal * ((q : ℝ) - (m : ℝ)) := by
-      calc
-        (2 * Jreal) * xR = Jreal * (2 * xR) := by ring
-        _ = Jreal * ((q : ℝ) - (m : ℝ)) := by simp [hx_two]
-    have hright : (2 * Jreal) * (Int.ceil xR : ℝ) = A_real := by
-      simp [A_real, hAreal_def, D]
-    simpa [hleft, hright] using hmul
+      simpa [Jreal, hJreal_def] using
+        (show (0 : ℝ) ≤ (ℓ : ℝ) / 2 + ((ℓ : ℝ) ^ 2 * (m : ℝ)) / (q : ℝ) by positivity)
+    have hceil : xR ≤ D := by simpa [D, hD_def] using (Int.le_ceil xR)
+    -- `xR = (q-m)/2`, so multiplying `xR ≤ D` by `2*Jreal` gives the desired bound.
+    nlinarith [hceil, hJreal_nonneg, hxR_def, A_real, hAreal_def]
   -- key inequality Jreal*(q-m) > Bmax_real
   have hJ_gt_Bmax : Bmax_real < Jreal * ((q : ℝ) - (m : ℝ)) := by
-    -- first rewrite the difference in a more symmetric way
-    have hD_eq :
-        Jreal * ((q : ℝ) - (m : ℝ)) - Bmax_real =
-          (Jreal - (ℓ : ℝ) / 2) *
-              ((q : ℝ) - (m : ℝ) - (ℓ : ℝ)) -
-            (ℓ : ℝ) ^ 2 * (m : ℝ) / 2 := by
-      simp [Bmax_real, hxR_def, hC_def]
-      ring_nf
-    have h_eqJ :
-        Jreal - (ℓ : ℝ) / 2 =
-          (ℓ : ℝ) ^ 2 * (m : ℝ) / (q : ℝ) := by
-      simp [Jreal, sub_eq_add_neg, add_comm, add_assoc]
-    have hJ_minus_pos : 0 < Jreal - (ℓ : ℝ) / 2 := by
-      have hℓ_posR : 0 < (ℓ : ℝ) := by exact_mod_cast hℓ_pos
-      have hm_posR : 0 < (m : ℝ) := by exact_mod_cast hm_pos
-      have hq_posR : 0 < (q : ℝ) := by exact_mod_cast hq_pos_nat
-      have : 0 < (ℓ : ℝ) ^ 2 * (m : ℝ) / (q : ℝ) := by
-        positivity
-      simpa [h_eqJ] using this
-    -- obtain that q/2 < q − m − ℓ
+    have hq_posR : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq_pos_nat
+    have hq_ne : (q : ℝ) ≠ 0 := ne_of_gt hq_posR
     have hq6m_real : (6 : ℝ) * (m : ℝ) < (q : ℝ) := by exact_mod_cast hq6m_nat
     have hm_lt_qdiv6 : (m : ℝ) < (q : ℝ) / 6 := by
       have h6pos : (0 : ℝ) < (6 : ℝ) := by norm_num
-      have : (m : ℝ) * 6 < (q : ℝ) := by
-        simpa [mul_comm] using hq6m_real
+      have : (m : ℝ) * 6 < (q : ℝ) := by simpa [mul_comm] using hq6m_real
       exact (lt_div_iff₀ h6pos).mpr this
-    have hℓ_le_qdiv3 : (ℓ : ℝ) ≤ (q : ℝ) / 3 := by
-      exact natCast_le_div ℓ q 3 hl
-    have h_qmℓ_gt :
-        (q : ℝ) / 2 < (q : ℝ) - (m : ℝ) - (ℓ : ℝ) := by
+    have hℓ_le_qdiv3 : (ℓ : ℝ) ≤ (q : ℝ) / 3 := natCast_le_div ℓ q 3 hl
+    have h_qmℓ_gt : (q : ℝ) / 2 < (q : ℝ) - (m : ℝ) - (ℓ : ℝ) := by
       nlinarith [hm_lt_qdiv6, hℓ_le_qdiv3]
-    -- compare two products using the previous inequality
-    have h_prod_gt :
-        (Jreal - (ℓ : ℝ) / 2) *
-            ((q : ℝ) - (m : ℝ) - (ℓ : ℝ)) >
-          (Jreal - (ℓ : ℝ) / 2) * ((q : ℝ) / 2) :=
-      mul_lt_mul_of_pos_left h_qmℓ_gt hJ_minus_pos
-    have h_prod_eq :
-        (Jreal - (ℓ : ℝ) / 2) * ((q : ℝ) / 2) =
-          (ℓ : ℝ) ^ 2 * (m : ℝ) / 2 := by
-      have hq_ne : (q : ℝ) ≠ 0 := by
-        have hq_pos : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq_pos_nat
-        exact ne_of_gt hq_pos
-      have :
-          ((ℓ : ℝ) ^ 2 * (m : ℝ) / (q : ℝ)) * ((q : ℝ) / 2) =
-            (ℓ : ℝ) ^ 2 * (m : ℝ) / 2 := by
+    have hhalf : (1 / 2 : ℝ) < ((q : ℝ) - (m : ℝ) - (ℓ : ℝ)) / (q : ℝ) := by
+      have :=
+        (div_lt_div_of_pos_right h_qmℓ_gt hq_posR :
+          ((q : ℝ) / 2) / (q : ℝ) < ((q : ℝ) - (m : ℝ) - (ℓ : ℝ)) / (q : ℝ))
+      have hq_div : ((q : ℝ) / 2) / (q : ℝ) = (1 / 2 : ℝ) := by
         field_simp [hq_ne]
-      simpa [h_eqJ] using this
-    have hmain :
-        (Jreal - (ℓ : ℝ) / 2) *
-            ((q : ℝ) - (m : ℝ) - (ℓ : ℝ)) >
-          (ℓ : ℝ) ^ 2 * (m : ℝ) / 2 := by
-      simpa [h_prod_eq] using h_prod_gt
-    have hD_pos :
-        Jreal * ((q : ℝ) - (m : ℝ)) - Bmax_real > 0 := by
-      have hD2_pos :
-          (Jreal - (ℓ : ℝ) / 2) *
-              ((q : ℝ) - (m : ℝ) - (ℓ : ℝ)) -
-            (ℓ : ℝ) ^ 2 * (m : ℝ) / 2 > 0 :=
-        sub_pos.mpr hmain
-      simpa [hD_eq] using hD2_pos
-    exact sub_pos.mp hD_pos
+      simpa [hq_div] using this
+    have hdiff :
+        Jreal * ((q : ℝ) - (m : ℝ)) - Bmax_real =
+          (ℓ : ℝ) ^ 2 * (m : ℝ) *
+            (((q : ℝ) - (m : ℝ) - (ℓ : ℝ)) / (q : ℝ) - (1 / 2 : ℝ)) := by
+      simp [Jreal, Bmax_real, xR, C, hJreal_def, hxR_def, hC_def]
+      field_simp [hq_ne]
+      ring
+    have hpos_frac :
+        0 < ((q : ℝ) - (m : ℝ) - (ℓ : ℝ)) / (q : ℝ) - (1 / 2 : ℝ) :=
+      sub_pos.mpr hhalf
+    have hpos_lm : 0 < (ℓ : ℝ) ^ 2 * (m : ℝ) := by
+      have hℓ_posR : 0 < (ℓ : ℝ) := by exact_mod_cast hℓ_pos
+      have hm_posR : 0 < (m : ℝ) := by exact_mod_cast hm_pos
+      positivity
+    have : 0 < Jreal * ((q : ℝ) - (m : ℝ)) - Bmax_real := by
+      simpa [hdiff] using mul_pos hpos_lm hpos_frac
+    exact sub_pos.mp this
   -- combine to get Bmax_real < A_real
   have hA_gt_Bmax : Bmax_real < A_real :=
     lt_of_lt_of_le hJ_gt_Bmax hA_ge
@@ -613,10 +549,9 @@ by
   set J : ℕ := Nat.ceil ((ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ)) with hJdef
   simp [d, J]
   have hf : f ≠ 0 := by
-    rintro hf0
+    intro hf0
     have hm0 : m = 0 := by simpa [hf0] using hfdeg.symm
-    have : (2 : ℕ) ≤ 0 := by simp [hm0] at hm_ge_two
-    exact (by decide : ¬ (2 ≤ 0)) this
+    exact (Nat.ne_of_gt _hm_pos) hm0
   let c : ℕ := (q - 1) / 2
   let V := Fin (2 * J) → Polynomial.degreeLT F (d + 1)
   let W := ∀ k : Fin ℓ, Polynomial.degreeLT F (J + d + k * (m - 1))
@@ -765,40 +700,26 @@ by
                 x ^ j) := by
       classical
       let p : Fin J → Polynomial F := fun j =>
-        hasseDerivOp F k (f ^ ℓ * (rjMap j v)) / f ^ (ℓ - k) +
+        hasseDerivOp F k (f ^ ℓ * rj (j : ℕ)) / f ^ (ℓ - k) +
           Polynomial.C a *
-            (hasseDerivOp F k (f ^ (ℓ + c) * (sjMap j v)) / f ^ (ℓ + c - k))
+            (hasseDerivOp F k (f ^ (ℓ + c) * sj (j : ℕ)) / f ^ (ℓ + c - k))
       have hsum_poly :
           sigmaMap ⟨k, hk⟩ v = ∑ j : Fin J, p j * Polynomial.X ^ (j : ℕ) := by
-        simp [p, sigmaMap, rjkMap, sjkMap, stepanovHasseQuotMap_eq_div_left,
-          polyMulRightLinear, LinearMap.comp_apply, LinearMap.add_apply,
-          LinearMap.smul_apply, Polynomial.smul_eq_C_mul]
-      have hsum_eval_fin' :
+        simp [p, sigmaMap, rj, sj, rjkMap, sjkMap, stepanovHasseQuotMap_eq_div_left,
+          polyMulRightLinear, LinearMap.comp_apply, LinearMap.add_apply, LinearMap.smul_apply,
+          Polynomial.smul_eq_C_mul]
+      have hsum_eval_fin :
           (sigmaMap ⟨k, hk⟩ v).eval x = ∑ j : Fin J, (p j).eval x * x ^ (j : ℕ) := by
-        have h :=
-          (Polynomial.eval_finset_sum (s := (Finset.univ : Finset (Fin J)))
-            (g := fun j : Fin J => p j * Polynomial.X ^ (j : ℕ)) (x := x))
-        have h' :
-            (sigmaMap ⟨k, hk⟩ v).eval x =
-              ∑ j : Fin J, Polynomial.eval x (p j * Polynomial.X ^ (j : ℕ)) := by
-          simpa [hsum_poly] using h
-        refine h'.trans ?_
-        classical
-        refine Finset.sum_congr rfl ?_
-        intro j _
-        simp [Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_X]
-      have hrj : ∀ j : Fin J, rjMap j v = rj j := by
-        intro j; simp [rj, j.isLt]
-      have hsj : ∀ j : Fin J, sjMap j v = sj j := by
-        intro j; simp [sj, j.isLt]
+        simpa [Polynomial.eval_finset_sum, Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_X] using
+          congrArg (fun P : Polynomial F => P.eval x) hsum_poly
       let fsum : ℕ → F := fun j =>
         (((hasseDerivOp F k (f ^ ℓ * rj j)) / f ^ (ℓ - k)).eval x +
             a *
               ((hasseDerivOp F k (f ^ (ℓ + c) * sj j)) / f ^ (ℓ + c - k)).eval x) *
           x ^ j
       have hfin : (sigmaMap ⟨k, hk⟩ v).eval x = ∑ j : Fin J, fsum j := by
-        simpa [fsum, p, hrj, hsj, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
-          mul_add, mul_assoc] using hsum_eval_fin'
+        simpa [fsum, p, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C, mul_add,
+          mul_assoc] using hsum_eval_fin
       simpa [fsum] using (hfin.trans (Fin.sum_univ_eq_sum_range (f := fsum) (n := J)))
     have : (sigmaMap ⟨k, hk⟩ v).eval x = 0 := by
       simp [hpoly_zero]
