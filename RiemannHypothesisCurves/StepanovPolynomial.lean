@@ -1,4 +1,5 @@
 import Mathlib
+import RiemannHypothesisCurves.StepanovDegreeBounds
 import RiemannHypothesisCurves.StepanovSystem
 
 noncomputable def S_a (F : Type*) [Field F] (f : Polynomial F) (c : ℕ) (a : F) : Set F :=

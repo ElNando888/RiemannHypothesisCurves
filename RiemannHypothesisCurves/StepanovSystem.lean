@@ -1,5 +1,6 @@
 import Mathlib
 import RiemannHypothesisCurves.Utils
+import RiemannHypothesisCurves.StepanovNonSquare
 import RiemannHypothesisCurves.StepanovVanishing
 
 lemma stepanov_sigma_degree_bound_fin

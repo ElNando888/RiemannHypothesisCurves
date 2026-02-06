@@ -1,5 +1,5 @@
 import Mathlib
-import RiemannHypothesisCurves.StepanovDegreeBounds
+import RiemannHypothesisCurves.StepanovAuxiliary
 
 lemma stepanov_vanishing_roots (F : Type*) [Field F] (f g : Polynomial F) (ℓ : ℕ) (x : F)
   (hx : Polynomial.eval x f = 0) :
