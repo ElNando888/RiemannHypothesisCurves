@@ -8,7 +8,13 @@ The final Lean output is in `RiemannHypothesisHEC.lean`. The human-supplied blue
 
 All statements, proofs, and documentation were created by Gauss, Math Inc's frontier autoformalization agent.
 
-![Blueprint dependency graph](images/blueprint_dep_graph.png)
+The blueprint dependency graph is generated as part of the blueprint web build:
+
+```bash
+uvx leanblueprint web
+```
+
+Then open `blueprint/dep_graph_document.html`.
 
 ---
 
@@ -86,7 +92,7 @@ PY
 
 - `RiemannHypothesisCurves/` – main Lean development of the proof.
 - `RiemannHypothesisCurves.lean` – top-level Lean entry point.
-- `blueprint/` – LaTeX blueprint, including the dependency graph and web/PDF build assets.
+- `blueprint/` – LaTeX blueprint + web/PDF build assets (the dependency graph is generated).
 - `home_page/` – Jekyll-based landing page used for the project website.
 
 ---

@@ -11,6 +11,7 @@
 /blueprint/src/web.paux
 /blueprint/src/web.bbl
 /blueprint/print/
+images/blueprint_dep_graph.png
 
 ## TeX
 *.aux
