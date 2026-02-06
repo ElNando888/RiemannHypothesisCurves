@@ -1,8 +1,6 @@
 import Mathlib
-
 noncomputable def hasseDerivOp (F : Type*) [Field F] (k : ℕ) : Polynomial F → Polynomial F :=
   Polynomial.hasseDeriv k
-
 lemma sum_hasseDeriv_piAntidiag_eq_sum_fin
     (F : Type*) [Field F] (k r : ℕ) (f : Fin r → Polynomial F) :
     (∑ j ∈ ((Finset.univ : Finset (Fin r)).piAntidiag k),
@@ -51,11 +49,10 @@ by
 
 lemma hasseLeibniz_general (F : Type*) [Field F] (k r : ℕ) (f : Fin r → Polynomial F) :
   hasseDerivOp F k ((Finset.univ : Finset (Fin r)).prod (fun i => f i)) =
-    Finset.sum
-      (((Finset.univ : Finset (Fin r → Fin (k + 1)))).filter
-        (fun j => ((Finset.univ : Finset (Fin r)).sum (fun i => (j i).val)) = k))
-      (fun j => (Finset.univ : Finset (Fin r)).prod
-        (fun i => hasseDerivOp F ((j i).val) (f i))) :=
+    ∑ j ∈
+        ((Finset.univ : Finset (Fin r → Fin (k + 1))).filter
+          (fun j => (Finset.univ : Finset (Fin r)).sum (fun i => (j i).val) = k)),
+      (Finset.univ : Finset (Fin r)).prod (fun i => hasseDerivOp F ((j i).val) (f i)) :=
 by
   classical
   have hasseLeibniz_piAntidiag_finset :
@@ -68,9 +65,8 @@ by
       cases k with
       | zero => simp [hasseDerivOp]
       | succ k =>
-          simpa [hasseDerivOp,
-            Finset.piAntidiag_empty_of_ne_zero (Nat.succ_ne_zero k)] using
-            (Polynomial.hasseDeriv_C (R := F) (k := Nat.succ k) (r := (1 : F)) (Nat.succ_pos k))
+          simpa [hasseDerivOp, Finset.piAntidiag_empty_of_ne_zero (Nat.succ_ne_zero k)] using
+            (Polynomial.hasseDeriv_C (R := F) (k := k.succ) (r := (1 : F)) (Nat.succ_pos k))
     · intro a s ha ih k
       let u : Finset (Fin r) := Finset.cons a s ha
       let w : (Fin r → ℕ) → Polynomial F := fun j => u.prod fun i => hasseDerivOp F (j i) (f i)
@@ -86,10 +82,10 @@ by
               ∑ g ∈ s.piAntidiag p.2,
                 hasseDerivOp F p.1 (f a) *
                   s.prod (fun i => hasseDerivOp F (g i) (f i)) := by
-        refine (hmul.trans ?_)
-        refine Finset.sum_congr rfl ?_
-        intro p hp
-        simp [ih p.2, Finset.mul_sum, mul_assoc]
+        refine hmul.trans (by
+          refine Finset.sum_congr rfl ?_
+          intro p hp
+          simp [ih p.2, Finset.mul_sum, mul_assoc])
       have hR :
           (∑ j ∈ u.piAntidiag k, w j) =
             ∑ p ∈ Finset.antidiagonal k,
@@ -135,15 +131,11 @@ by
         have hprod_s :
             s.prod (fun i => hasseDerivOp F (g i + if i = a then p.1 else 0) (f i)) =
               s.prod (fun i => hasseDerivOp F (g i) (f i)) := by
-          refine Finset.prod_congr rfl ?_
-          intro i hi
+          refine Finset.prod_congr rfl (fun i hi => ?_)
           have hne : i ≠ a := by
-            intro h
-            subst h
-            exact ha hi
+            intro h; subst h; exact ha hi
           simp [hne]
-        dsimp [w]
-        dsimp [u]
+        dsimp [w, u]
         rw [Finset.prod_cons (s := s) (a := a)
           (f := fun i => hasseDerivOp F (g i + if i = a then p.1 else 0) (f i)) ha]
         simpa [hga, hprod_s, mul_assoc]

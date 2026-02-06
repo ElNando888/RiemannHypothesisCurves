@@ -1,18 +1,13 @@
 import Mathlib
 import RiemannHypothesisCurves.StepanovPolynomial
 import RiemannHypothesisCurves.Utils
-
 noncomputable def hyperellipticCurve (F : Type*) [Field F] (f : Polynomial F) : Set (F × F) :=
   {p | p.2 ^ 2 = Polynomial.eval p.1 f}
 
-lemma hasse_vanishing_card_bound
-  (F : Type*) [Field F] [DecidableEq F]
-  (r : Polynomial F) (ℓ : ℕ)
-  (S : Finset F)
-  (hr : r ≠ 0)
-  (hℓ_pos : 0 < ℓ)
-  (hvan : ∀ x ∈ S, ∀ k < ℓ, (hasseDerivOp F k r).eval x = 0) :
-  (S.card : ℝ) ≤ (r.natDegree : ℝ) / ℓ :=
+lemma hasse_vanishing_card_bound (F : Type*) [Field F] [DecidableEq F]
+    (r : Polynomial F) (ℓ : ℕ) (S : Finset F) (hr : r ≠ 0) (hℓ_pos : 0 < ℓ)
+    (hvan : ∀ x ∈ S, ∀ k < ℓ, (hasseDerivOp F k r).eval x = 0) :
+    (S.card : ℝ) ≤ (r.natDegree : ℝ) / ℓ :=
 by
   let s : F → Polynomial F := fun x => (Polynomial.X - Polynomial.C x) ^ ℓ
   have hpair_all : Pairwise fun x y : F => IsCoprime (s x) (s y) := by
@@ -61,9 +56,7 @@ by
   simpa [mul_comm, mul_left_comm, mul_assoc, hne, div_eq_mul_inv] using
     (mul_le_mul_of_nonneg_right h_real_mul (inv_nonneg.mpr hℓ_pos'.le))
 
-lemma ceil_sqrt_le_div_three
-  (q : ℕ) (hq : 15 ≤ q) :
-  Nat.ceil (Real.sqrt q) ≤ q / 3 :=
+lemma ceil_sqrt_le_div_three (q : ℕ) (hq : 15 ≤ q) : Nat.ceil (Real.sqrt q) ≤ q / 3 :=
 by
   set k : ℕ := q / 3 with hk
   have hk_ge5 : 5 ≤ k := by
@@ -92,17 +85,15 @@ by
   have : Nat.ceil (Real.sqrt (q : ℝ)) ≤ k := Nat.ceil_le.2 h_sqrt_le
   simpa [hk] using this
 
-lemma riemann_hypothesis_stepanov_bound
-  (F : Type*) [Field F] [Fintype F] [DecidableEq F] (hF : ringChar F ≠ 2)
-  (f : Polynomial F) (q : ℕ) (a : F)
-  (hq : q = Fintype.card F)
-  (hm3 : 3 ≤ f.natDegree)
-  (hnsq : ¬ ∃ g : Polynomial (AlgebraicClosure F),
-      g * g = Polynomial.map (algebraMap F (AlgebraicClosure F)) f)
-  (hq6m : q > 6 * f.natDegree)
-  [DecidablePred (fun x : F => x ∈ S_a F f ((q - 1) / 2) a)] :
-  (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} : ℝ)
-    < (q : ℝ) / 2 + 2 * (f.natDegree : ℝ) * (Nat.ceil (Real.sqrt q) : ℝ) :=
+lemma riemann_hypothesis_stepanov_bound (F : Type*) [Field F] [Fintype F] [DecidableEq F]
+    (hF : ringChar F ≠ 2) (f : Polynomial F) (q : ℕ) (a : F) (hq : q = Fintype.card F)
+    (hm3 : 3 ≤ f.natDegree)
+    (hnsq : ¬ ∃ g : Polynomial (AlgebraicClosure F),
+        g * g = Polynomial.map (algebraMap F (AlgebraicClosure F)) f)
+    (hq6m : q > 6 * f.natDegree)
+    [DecidablePred (fun x : F => x ∈ S_a F f ((q - 1) / 2) a)] :
+    (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} : ℝ) <
+      (q : ℝ) / 2 + 2 * (f.natDegree : ℝ) * (Nat.ceil (Real.sqrt q) : ℝ) :=
 by
   set m : ℕ := f.natDegree with hm_def
   have h18_lt_q : 18 < q := by
@@ -180,17 +171,14 @@ by
     lt_of_le_of_lt h_card_le hdeg_div_main
   simpa [m, hm_def, ℓ, hℓ_def] using this
 
-lemma riemann_hypothesis_upper_bound
-    (F : Type*) [Field F] [Fintype F] [DecidableEq F] (hF : ringChar F ≠ 2)
-    (f : Polynomial F) (q : ℕ)
-    (hq : q = Fintype.card F)
+lemma riemann_hypothesis_upper_bound (F : Type*) [Field F] [Fintype F] [DecidableEq F]
+    (hF : ringChar F ≠ 2) (f : Polynomial F) (q : ℕ) (hq : q = Fintype.card F)
     (hm3 : 3 ≤ f.natDegree)
     (hnsq : ¬ ∃ g : Polynomial (AlgebraicClosure F),
         g * g = Polynomial.map (algebraMap F (AlgebraicClosure F)) f)
-    (hq6m : q > 6 * f.natDegree)
-    (hodd : ringChar F ≠ 2) :
-    (Fintype.card {p : F × F // p.2 ^ 2 = Polynomial.eval p.1 f} : ℝ)
-      < (q : ℝ) + 4 * (f.natDegree : ℝ) * (Nat.ceil (Real.sqrt q) : ℝ) :=
+    (hq6m : q > 6 * f.natDegree) (hodd : ringChar F ≠ 2) :
+    (Fintype.card {p : F × F // p.2 ^ 2 = Polynomial.eval p.1 f} : ℝ) <
+      (q : ℝ) + 4 * (f.natDegree : ℝ) * (Nat.ceil (Real.sqrt q) : ℝ) :=
 by
   classical
   set c := (q - 1) / 2 with hc_def
@@ -224,7 +212,6 @@ by
     have h_fiber_le : ∀ y : S1_set, Fintype.card {p : curveSet // proj p = y} ≤ 2 := by
       intro y
       classical
-      -- each fiber injects into the square-root fiber over `f x`
       have h_inj :
           Fintype.card {p : curveSet // proj p = y} ≤
             Fintype.card {t : F // t ^ 2 = Polynomial.eval y.1 f} := by
@@ -248,35 +235,25 @@ by
       exact le_trans h_inj (card_sq_eq_le_two (F := F) (a := Polynomial.eval y.1 f))
     have h_count : Fintype.card curveSet ≤ 2 * Fintype.card S1_set := by
       classical
+      have hcard :
+          Fintype.card curveSet = ∑ y : S1_set, Fintype.card {p : curveSet // proj p = y} := by
+        simpa using
+          (Fintype.card_congr (Equiv.sigmaFiberEquiv proj).symm).trans
+            (Fintype.card_sigma (α := fun y : S1_set => {p : curveSet // proj p = y}))
       calc
-        Fintype.card curveSet =
-            ∑ y : S1_set, Fintype.card {p : curveSet // proj p = y} := by
-              calc
-                Fintype.card curveSet =
-                    Fintype.card ((y : S1_set) × {p : curveSet // proj p = y}) := by
-                      exact Fintype.card_congr (Equiv.sigmaFiberEquiv proj).symm
-                _ = ∑ y : S1_set, Fintype.card {p : curveSet // proj p = y} := by
-                      simpa using
-                        (Fintype.card_sigma (β := fun y : S1_set => {p : curveSet // proj p = y}))
-        _ ≤ ∑ _y : S1_set, 2 := by
-              exact Finset.sum_le_sum (fun y _ => h_fiber_le y)
+        Fintype.card curveSet = ∑ y : S1_set, Fintype.card {p : curveSet // proj p = y} := hcard
+        _ ≤ ∑ _y : S1_set, 2 := Finset.sum_le_sum (fun y _ => h_fiber_le y)
         _ = 2 * Fintype.card S1_set := by
               simp [Finset.sum_const, Finset.card_univ, mul_comm]
     exact_mod_cast h_count
   have h := lt_of_le_of_lt h_N_le_2S1 h_two_S1_bound
   simpa [curveSet, S1_set, hc_def, hm_def] using h
 
-lemma curve_count_ge_two_times_N1
-    (F : Type*) [Field F] [Fintype F] [DecidableEq F]
-    (f : Polynomial F) (q : ℕ)
-    (hq : q = Fintype.card F)
-    (hodd : ringChar F ≠ 2) :
-    (Fintype.card {p : F × F // p.2 ^ 2 = Polynomial.eval p.1 f} : ℝ)
-      ≥
-        2 *
-          (Fintype.card
-              {x : F // (Polynomial.eval x f) ^ ((q - 1) / 2) = 1 ∧
-                Polynomial.eval x f ≠ 0} : ℝ) :=
+lemma curve_count_ge_two_times_N1 (F : Type*) [Field F] [Fintype F] [DecidableEq F]
+    (f : Polynomial F) (q : ℕ) (hq : q = Fintype.card F) (hodd : ringChar F ≠ 2) :
+    (Fintype.card {p : F × F // p.2 ^ 2 = Polynomial.eval p.1 f} : ℝ) ≥
+      2 * (Fintype.card {x : F // (Polynomial.eval x f) ^ ((q - 1) / 2) = 1 ∧
+        Polynomial.eval x f ≠ 0} : ℝ) :=
 by
   classical
   subst hq
@@ -342,25 +319,16 @@ by
       exact hroot_ne_neg this
     · rfl
   have hcount_real' : (2 : ℝ) * (Fintype.card N1 : ℝ) ≤ (Fintype.card C : ℝ) := by
-    have hcount_nat : Fintype.card (N1 × Bool) ≤ Fintype.card C :=
-      Fintype.card_le_of_injective φ hφ_inj
-    have hcount_real : (Fintype.card (N1 × Bool) : ℝ) ≤ (Fintype.card C : ℝ) := by
-      exact_mod_cast hcount_nat
-    simpa [Fintype.card_prod, Nat.cast_mul, mul_assoc, mul_left_comm, mul_comm] using hcount_real
-  -- unfold local notation back to the statement
+    have : (Fintype.card (N1 × Bool) : ℝ) ≤ (Fintype.card C : ℝ) := by
+      exact_mod_cast (Fintype.card_le_of_injective φ hφ_inj)
+    simpa [Fintype.card_prod, Nat.cast_mul, mul_assoc, mul_left_comm, mul_comm] using this
   simpa [C, N1, hc_def, ge_iff_le, two_mul, mul_assoc, mul_left_comm, mul_comm] using hcount_real'
 
-lemma partition_N1_eq_q_sub_S_neg1
-    (F : Type*) [Field F] [Fintype F] [DecidableEq F]
-    (f : Polynomial F) (q : ℕ)
-    (hq : q = Fintype.card F)
-    (hodd : ringChar F ≠ 2)
+lemma partition_N1_eq_q_sub_S_neg1 (F : Type*) [Field F] [Fintype F] [DecidableEq F]
+    (f : Polynomial F) (q : ℕ) (hq : q = Fintype.card F) (hodd : ringChar F ≠ 2)
     [DecidablePred (fun x : F => x ∈ S_a F f ((q - 1) / 2) (-1))] :
-    (Fintype.card
-        {x : F // (Polynomial.eval x f) ^ ((q - 1) / 2) = 1 ∧
-          Polynomial.eval x f ≠ 0} : ℝ)
-      = (q : ℝ) -
-        (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) (-1)} : ℝ) :=
+    (Fintype.card {x : F // (Polynomial.eval x f) ^ ((q - 1) / 2) = 1 ∧ Polynomial.eval x f ≠ 0} : ℝ) =
+      (q : ℝ) - (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) (-1)} : ℝ) :=
 by
   subst hq
   set c := (Fintype.card F - 1) / 2 with hc_def
@@ -422,33 +390,27 @@ by
               (Fintype.card {x : F // x ∈ S_a F f
                 ((Fintype.card F - 1) / 2) (-1)} : ℝ)) using 4
 
-lemma riemann_hypothesis_lower_bound
-    (F : Type*) [Field F] [Fintype F] [DecidableEq F] (hF : ringChar F ≠ 2)
-    (f : Polynomial F) (q : ℕ)
-    (hq : q = Fintype.card F)
+lemma riemann_hypothesis_lower_bound (F : Type*) [Field F] [Fintype F] [DecidableEq F]
+    (hF : ringChar F ≠ 2) (f : Polynomial F) (q : ℕ) (hq : q = Fintype.card F)
     (hm3 : 3 ≤ f.natDegree)
     (hnsq : ¬ ∃ g : Polynomial (AlgebraicClosure F),
         g * g = Polynomial.map (algebraMap F (AlgebraicClosure F)) f)
-    (hq6m : q > 6 * f.natDegree)
-    (hodd : ringChar F ≠ 2) :
-    (Fintype.card {p : F × F // p.2 ^ 2 = Polynomial.eval p.1 f} : ℝ)
-      > (q : ℝ) - 4 * (f.natDegree : ℝ) * (Nat.ceil (Real.sqrt q) : ℝ) :=
+    (hq6m : q > 6 * f.natDegree) (hodd : ringChar F ≠ 2) :
+    (Fintype.card {p : F × F // p.2 ^ 2 = Polynomial.eval p.1 f} : ℝ) >
+      (q : ℝ) - 4 * (f.natDegree : ℝ) * (Nat.ceil (Real.sqrt q) : ℝ) :=
 by
   classical
   linarith [ curve_count_ge_two_times_N1 F f q hq hodd,
             partition_N1_eq_q_sub_S_neg1 F f q hq hodd,
             riemann_hypothesis_stepanov_bound F hF f q (-1) hq hm3 hnsq hq6m ]
 
-theorem riemann_hypothesis_hec
-    (F : Type*) [Field F] [Fintype F] [DecidableEq F]
-    (f : Polynomial F) (q : ℕ)
-    (hq : q = Fintype.card F)
-    (hm3 : 3 ≤ f.natDegree)
+theorem riemann_hypothesis_hec (F : Type*) [Field F] [Fintype F] [DecidableEq F]
+    (f : Polynomial F) (q : ℕ) (hq : q = Fintype.card F) (hm3 : 3 ≤ f.natDegree)
     (hnsq : ¬ ∃ g : Polynomial (AlgebraicClosure F),
         g * g = Polynomial.map (algebraMap F (AlgebraicClosure F)) f)
     (hq6m : q > 6 * f.natDegree) :
-    |((q : ℝ) - (Fintype.card {p : F × F // p.2 ^ 2 = Polynomial.eval p.1 f} : ℝ))|
-      < (5 : ℝ) * (f.natDegree : ℝ) * Real.sqrt (q : ℝ) :=
+    |(q : ℝ) - (Fintype.card {p : F × F // p.2 ^ 2 = Polynomial.eval p.1 f} : ℝ)| <
+      (5 : ℝ) * (f.natDegree : ℝ) * Real.sqrt (q : ℝ) :=
 by
   have hdeg_pos : 0 < f.natDegree :=
     lt_of_lt_of_le (by decide : 0 < 3) hm3
@@ -502,9 +464,8 @@ by
         nlinarith [h_ceil_bound]
       _ = 4 * (f.natDegree : ℝ) * Real.sqrt q +
             4 * (f.natDegree : ℝ) := by ring
-      _ < 4 * (f.natDegree : ℝ) * Real.sqrt q +
-            (f.natDegree : ℝ) * Real.sqrt q := by
-        nlinarith [hm_pos, h_sqrt_gt_4]
-      _ = 5 * (f.natDegree : ℝ) * Real.sqrt q := by ring
-
+        _ < 4 * (f.natDegree : ℝ) * Real.sqrt q +
+              (f.natDegree : ℝ) * Real.sqrt q := by
+          nlinarith [hm_pos, h_sqrt_gt_4]
+        _ = 5 * (f.natDegree : ℝ) * Real.sqrt q := by ring
 #print axioms riemann_hypothesis_hec
