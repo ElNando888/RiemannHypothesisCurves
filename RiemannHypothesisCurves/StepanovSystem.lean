@@ -2,7 +2,6 @@ import Mathlib
 import RiemannHypothesisCurves.Utils
 import RiemannHypothesisCurves.StepanovNonSquare
 import RiemannHypothesisCurves.StepanovVanishing
-
 lemma stepanov_sigma_degree_bound_fin
     (F : Type*) [Field F]
     (d k m J : ℕ) (a : F)
@@ -32,7 +31,6 @@ by
     _ ≤ J - 1 + d + k * (m - 1) := by
       have := add_le_add_left (Nat.le_pred_of_lt j.isLt) (d + k * (m - 1))
       simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using this
-
 lemma stepanov_system_constraint_count
     (ℓ J d m q : ℕ) (B : ℕ)
     (hℓ_pos : 0 < ℓ) (hm_ge_two : 2 ≤ m)
@@ -52,7 +50,6 @@ by
       (ℓ * (ℓ - 1) / 2) * (m - 1) = ℓ * (ℓ - 1) * (m - 1) / 2 := by
     simpa [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using
       (Nat.mul_div_right_comm h2 (m - 1)).symm
-
   have h_sum :
       ∑ k ∈ Finset.range ℓ, (J + d + k * (m - 1)) =
         ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 := by
@@ -60,62 +57,46 @@ by
         ∑ k ∈ Finset.range ℓ, k * (m - 1) = (∑ k ∈ Finset.range ℓ, k) * (m - 1) := by
       simpa [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using
         (Finset.sum_mul (s := Finset.range ℓ) (f := fun k : ℕ => k) (a := m - 1)).symm
-    -- `simp` computes the sum and then expands the remaining products.
     simp [Finset.sum_add_distrib, Finset.sum_const, Finset.card_range, h_lin, Finset.sum_range_id,
       Nat.mul_add, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm, h_mul_div, Nat.mul_assoc,
       Nat.mul_left_comm, Nat.mul_comm]
-
   have hB_nat : B ≤ ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 := by
     simpa [h_sum] using hB
-
   refine ⟨hB_nat, ?_⟩
-
   have hB_real_le :
-      (B : ℝ) ≤
-        ((ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) := by
+      (B : ℝ) ≤ ((ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) := by
     exact_mod_cast hB_nat
-
   have hx_pos : (0 : ℚ) < ((q : ℚ) - m) / 2 := by
-    have hm_lt_q : m < q :=
-      lt_of_le_of_lt (Nat.le_mul_of_pos_left m (by decide : 0 < 6)) hq6m
-    have : (m : ℚ) < (q : ℚ) := by exact_mod_cast hm_lt_q
-    exact div_pos (sub_pos.mpr this) (by norm_num)
-
+    have hm_lt_q : m < q := lt_of_le_of_lt (Nat.le_mul_of_pos_left m (by decide : 0 < 6)) hq6m
+    exact div_pos (sub_pos.mpr (by exact_mod_cast hm_lt_q)) (by norm_num)
   have hd_lt_real : (d : ℝ) < ((q : ℝ) - (m : ℝ)) / 2 := by
-    have hd_lt_rat : (d : ℚ) < ((q : ℚ) - m) / 2 :=
+    have : (d : ℚ) < ((q : ℚ) - m) / 2 :=
       Nat.lt_ceil.mp <| Nat.lt_of_le_pred (Nat.ceil_pos.mpr hx_pos) (by simp [hd])
-    exact_mod_cast hd_lt_rat
-
+    exact_mod_cast this
   have hℓ_ge1 : 1 ≤ ℓ := Nat.succ_le_of_lt hℓ_pos
   have hm_ge1 : 1 ≤ m := le_trans (show (1 : ℕ) ≤ 2 by decide) hm_ge_two
   have hℓ_sub : ((ℓ - 1 : ℕ) : ℝ) = (ℓ : ℝ) - 1 := by
     simpa using (Nat.cast_sub (R := ℝ) hℓ_ge1)
   have hm_sub : ((m - 1 : ℕ) : ℝ) = (m : ℝ) - 1 := by
     simpa using (Nat.cast_sub (R := ℝ) hm_ge1)
-
   have h_cast_div :
       ((ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) =
         (ℓ : ℝ) * ((ℓ - 1 : ℕ) : ℝ) * ((m - 1 : ℕ) : ℝ) / 2 := by
     simpa [Nat.cast_mul, mul_assoc, mul_left_comm, mul_comm] using
       (Nat.cast_div (K := ℝ) (m := ℓ * (ℓ - 1) * (m - 1)) (n := 2) h2' (by norm_num))
-
   have hterm :
       ((ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) =
         (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 := by
     refine h_cast_div.trans ?_
     simp [hℓ_sub, hm_sub, mul_assoc]
-
   have hS_cast :
       ((ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) =
         (ℓ : ℝ) * (J : ℝ) + (ℓ : ℝ) * (d : ℝ) +
           (ℓ : ℝ) * (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 := by
     simp [Nat.cast_add, Nat.cast_mul, add_assoc, hterm]
-
-  have hℓ_pos_real : (0 : ℝ) < (ℓ : ℝ) := by exact_mod_cast hℓ_pos
   have hEd_lt :
       (ℓ : ℝ) * (d : ℝ) < (ℓ : ℝ) * (((q : ℝ) - (m : ℝ)) / 2) :=
-    mul_lt_mul_of_pos_left hd_lt_real hℓ_pos_real
-
+    mul_lt_mul_of_pos_left hd_lt_real (by exact_mod_cast hℓ_pos)
   have h_sum_lt :
       ((ℓ * J + ℓ * d + ℓ * (ℓ - 1) * (m - 1) / 2 : ℕ) : ℝ) <
         (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2 +
@@ -133,9 +114,7 @@ by
             (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) := by
       ring
     simpa [hS_cast, h_target_eq] using h'
-
   exact lt_of_le_of_lt hB_real_le h_sum_lt
-
 lemma stepanov_monotone_in_J
     {J₁ J₂ D ℓ x C : ℝ}
     (hA : 2 * J₁ * D > ℓ * (J₁ + x) + C)
@@ -144,35 +123,24 @@ lemma stepanov_monotone_in_J
   2 * J₂ * D > ℓ * (J₂ + x) + C :=
 by
   nlinarith
-
 lemma stepanov_twoD_sub_ell_pos
     (q m ℓ : ℕ) (hq6m : q > 6 * m) (hℓ : ℓ ≤ q / 3) :
   0 < 2 * (Int.ceil (((q : ℝ) - (m : ℝ)) / 2) : ℝ) - (ℓ : ℝ) :=
 by
-  have hm_lt_qdiv6 : (m : ℝ) < (q : ℝ) / 6 :=
-    (lt_div_iff₀ (by norm_num : (0 : ℝ) < (6 : ℝ))).mpr <|
-      by
-        have h : (6 : ℝ) * (m : ℝ) < (q : ℝ) := by
-          exact_mod_cast (by simpa [Nat.mul_comm] using hq6m : 6 * m < q)
-        simpa [mul_comm] using h
-  have hℓ_le_qdiv3 : (ℓ : ℝ) ≤ (q : ℝ) / 3 := by
-    exact natCast_le_div ℓ q 3 hℓ
+  have hm_lt_qdiv6 : (m : ℝ) < (q : ℝ) / 6 := by
+    have h : (6 : ℝ) * (m : ℝ) < (q : ℝ) := by
+      exact_mod_cast (by simpa [Nat.mul_comm] using hq6m : 6 * m < q)
+    have h' : (m : ℝ) * 6 < (q : ℝ) := by simpa [mul_comm] using h
+    exact (lt_div_iff₀ (by norm_num : (0 : ℝ) < (6 : ℝ))).2 h'
+  have hℓ_le_qdiv3 : (ℓ : ℝ) ≤ (q : ℝ) / 3 := natCast_le_div ℓ q 3 hℓ
   set x : ℝ := ((q : ℝ) - (m : ℝ)) / 2 with hx
-  have h_lt : (ℓ : ℝ) < 2 * (Int.ceil x : ℝ) := by
-    have h_ell_lt_qm : (ℓ : ℝ) < (q : ℝ) - (m : ℝ) := by
-      have h : (q : ℝ) / 2 < (q : ℝ) - (m : ℝ) - (ℓ : ℝ) := by
-        nlinarith [hm_lt_qdiv6, hℓ_le_qdiv3]
-      nlinarith [h]
-    have h_qm_le : (q : ℝ) - (m : ℝ) ≤ 2 * (Int.ceil x : ℝ) := by
-      have hx_two : (2 : ℝ) * x = (q : ℝ) - (m : ℝ) := by
-        have : x + x = (q : ℝ) - (m : ℝ) := by simp [hx, add_halves]
-        simpa [two_mul] using this
-      have := (mul_le_mul_of_nonneg_left (Int.le_ceil x) (by norm_num) :
-        (2 : ℝ) * x ≤ (2 : ℝ) * (Int.ceil x : ℝ))
-      simpa [hx_two] using this
-    exact lt_of_lt_of_le h_ell_lt_qm h_qm_le
-  exact sub_pos.mpr (by simpa [hx] using h_lt)
-
+  have h_qmℓ : (q : ℝ) / 2 < (q : ℝ) - (m : ℝ) - (ℓ : ℝ) := by
+    nlinarith [hm_lt_qdiv6, hℓ_le_qdiv3]
+  have h_ell_lt_qm : (ℓ : ℝ) < (q : ℝ) - (m : ℝ) := by nlinarith [h_qmℓ]
+  have h_qm_le : (q : ℝ) - (m : ℝ) ≤ 2 * (Int.ceil x : ℝ) := by
+    nlinarith [Int.le_ceil x, hx]
+  have : (ℓ : ℝ) < 2 * (Int.ceil x : ℝ) := lt_of_lt_of_le h_ell_lt_qm h_qm_le
+  exact sub_pos.mpr (by simpa [hx] using this)
 lemma stepanov_system_dimension_inequality_nat
     (q m ℓ : ℕ)
     (hm_ge_two : 2 ≤ m) (hq6m : q > 6 * m) (hl : ℓ ≤ q / 3)
@@ -185,7 +153,6 @@ lemma stepanov_system_dimension_inequality_nat
     2 * J * Nat.ceil (((q : ℚ) - m) / 2) > B :=
 by
   intro J
-  -- basic integer setup
   set d : ℕ := Nat.ceil (((q : ℚ) - m) / 2) - 1 with hd
   have hB_le : B ≤ ∑ k ∈ Finset.range ℓ, (J + d + k * (m - 1)) := by
     simpa [J, hd, add_comm, add_left_comm, add_assoc] using hB
@@ -193,7 +160,6 @@ by
   have hq_pos_nat : 0 < q := lt_of_le_of_lt (Nat.zero_le (6 * m)) hq6m_nat
   have hm_lt_q : m < q :=
     lt_of_le_of_lt (Nat.le_mul_of_pos_left m (by decide : 0 < 6)) hq6m_nat
-  -- positivity of the expression defining J
   have hJ_expr_pos :
       0 < ((ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ)) := by
     have hℓ_posℚ : (0 : ℚ) < (ℓ : ℚ) := by exact_mod_cast hℓ_pos
@@ -203,14 +169,12 @@ by
     (Nat.one_le_ceil_iff
       (a := ((ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ)))).2
       hJ_expr_pos
-  -- apply constraint-count inequality and simplify its RHS a bit
   have hB_real_small :
       (B : ℝ) <
         (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2 +
           (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) :=
     (stepanov_system_constraint_count ℓ J d m q B
       hℓ_pos hm_ge_two hq6m_nat hl hd hJ_pos hB_le).2
-  -- some simple arithmetic bounds
   have hℓ_nonneg : (0 : ℝ) ≤ (ℓ : ℝ) := by exact_mod_cast (Nat.zero_le ℓ)
   have hm_pos : 0 < m := lt_of_lt_of_le (by decide : (0 : ℕ) < 2) hm_ge_two
   have hm1_nonneg : 0 ≤ (m : ℝ) - 1 :=
@@ -221,47 +185,29 @@ by
         (ℓ : ℝ) * ((J : ℝ) + ((q : ℝ) - (m : ℝ)) / 2) +
           (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2 :=
     by
-      refine lt_of_lt_of_le hB_real_small ?_
-      have hdiv :
-          (((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2 ≤ (ℓ : ℝ) * ((m : ℝ) - 1) / 2 := by
-        nlinarith [hm1_nonneg]
-      have hterm :
-          (ℓ : ℝ) * ((((ℓ : ℝ) - 1) * ((m : ℝ) - 1)) / 2) ≤
-            (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2 := by
-        nlinarith [hdiv, hℓ_nonneg]
-      nlinarith [hterm]
-  -- switch to a more convenient notation over ℝ
+      nlinarith [hB_real_small, hℓ_nonneg, hm1_nonneg]
   set Jreal : ℝ :=
       (ℓ : ℝ) / 2 + ((ℓ : ℝ) ^ 2 * (m : ℝ)) / (q : ℝ) with hJreal_def
   set xR : ℝ := ((q : ℝ) - (m : ℝ)) / 2 with hxR_def
   set D : ℝ := (Int.ceil xR : ℝ) with hD_def
   set C : ℝ := (ℓ : ℝ) ^ 2 * ((m : ℝ) - 1) / 2 with hC_def
-  -- nonnegativity of 2D − ℓ
   have hD_nonneg : 0 ≤ 2 * D - (ℓ : ℝ) := by
-    have hpos := stepanov_twoD_sub_ell_pos q m ℓ hq6m hl
-    have : 0 < 2 * (Int.ceil xR : ℝ) - (ℓ : ℝ) := by
-      simpa [xR, hxR_def, D, hD_def] using hpos
-    exact le_of_lt this
-  -- relate Jreal and J (ceil over ℚ vs ℝ)
+    exact le_of_lt (by simpa [xR, hxR_def, D, hD_def] using stepanov_twoD_sub_ell_pos q m ℓ hq6m hl)
   set tQ : ℚ :=
       (ℓ : ℚ) / 2 + (ℓ : ℚ) ^ 2 * (m : ℚ) / (q : ℚ) with htQ_def
   have htQ_le_ceil : (tQ : ℚ) ≤ Nat.ceil tQ := Nat.le_ceil tQ
   have hJreal_le_J : Jreal ≤ (J : ℝ) := by
     have : (tQ : ℝ) ≤ (Nat.ceil tQ : ℝ) := by exact_mod_cast htQ_le_ceil
     simpa [Jreal, tQ, hJreal_def, htQ_def] using this
-  -- define A_real and Bmax_real
   set A_real : ℝ := 2 * Jreal * D with hAreal_def
   set Bmax_real : ℝ :=
       (ℓ : ℝ) * (Jreal + xR) + C with hBmax_def
-  -- lower bound on A_real
   have hA_ge : Jreal * ((q : ℝ) - (m : ℝ)) ≤ A_real := by
     have hJreal_nonneg : (0 : ℝ) ≤ Jreal := by
       simpa [Jreal, hJreal_def] using
         (show (0 : ℝ) ≤ (ℓ : ℝ) / 2 + ((ℓ : ℝ) ^ 2 * (m : ℝ)) / (q : ℝ) by positivity)
     have hceil : xR ≤ D := by simpa [D, hD_def] using (Int.le_ceil xR)
-    -- `xR = (q-m)/2`, so multiplying `xR ≤ D` by `2*Jreal` gives the desired bound.
     nlinarith [hceil, hJreal_nonneg, hxR_def, A_real, hAreal_def]
-  -- key inequality Jreal*(q-m) > Bmax_real
   have hJ_gt_Bmax : Bmax_real < Jreal * ((q : ℝ) - (m : ℝ)) := by
     have hq_posR : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq_pos_nat
     have hq_ne : (q : ℝ) ≠ 0 := ne_of_gt hq_posR
@@ -297,10 +243,8 @@ by
     have : 0 < Jreal * ((q : ℝ) - (m : ℝ)) - Bmax_real := by
       simpa [hdiff] using mul_pos hpos_lm hpos_frac
     exact sub_pos.mp this
-  -- combine to get Bmax_real < A_real
   have hA_gt_Bmax : Bmax_real < A_real :=
     lt_of_lt_of_le hJ_gt_Bmax hA_ge
-  -- monotonicity in J
   have hA_gt_Bmax_J :
       2 * (J : ℝ) * D >
         (ℓ : ℝ) * ((J : ℝ) + xR) + C :=
@@ -317,7 +261,6 @@ by
   have hB_lt_A_real :
       (B : ℝ) < 2 * (J : ℝ) * D :=
     lt_of_lt_of_le hB_lt_Bmax_J (le_of_lt hA_gt_Bmax_J)
-  -- convert the statement back to ℚ / ℕ
   set xQ : ℚ := ((q : ℚ) - m) / 2 with hxQ_def
   have hxQ_nonneg : 0 ≤ xQ := by
     have hsub_nonneg : 0 ≤ (q : ℚ) - m :=
@@ -352,7 +295,6 @@ by
     (by
       exact_mod_cast hB_lt_A_nat_real :
         2 * J * Nat.ceil (((q : ℚ) - m) / 2) > B)
-
 lemma exists_nonzero_solution_of_finrank_lt
     (F : Type*) [Field F]
     (V W : Type*) [AddCommGroup V] [Module F V] [AddCommGroup W] [Module F W]
@@ -368,7 +310,6 @@ by
         (LinearMap.ker_ne_bot_of_finrank_lt (f := L) h) with
     ⟨v, hv, hv0⟩
   exact ⟨v, hv0, by simpa using hv⟩
-
 lemma natDegree_le_of_mem_degreeLT_succ
     (F : Type*) [Semiring F] (d : ℕ) (p : Polynomial.degreeLT F (d + 1)) :
     (p : Polynomial F).natDegree ≤ d :=
@@ -376,7 +317,6 @@ by
   have hp : (p : Polynomial F) ∈ Polynomial.degreeLE F d := by
     simpa [Polynomial.degreeLT_succ_eq_degreeLE] using p.2
   exact Polynomial.natDegree_le_of_degree_le (Polynomial.mem_degreeLE.mp hp)
-
 lemma stepanov_dimension_inequality_ceil
     (F : Type*) [Field F]
     (ℓ d m q B : ℕ)
@@ -405,16 +345,13 @@ by
           Module.finrank_fintype_fun_eq_card,
           LinearEquiv.finrank_eq (Polynomial.degreeLTEquiv F (d + 1)),
           hd, Nat.sub_add_cancel hceil_nat ] using hA_gt_B
-
 noncomputable def polyMulRightLinear (F : Type*) [Field F] (g : Polynomial F) :
     Polynomial F →ₗ[F] Polynomial F :=
   LinearMap.mulRight F g
-
 noncomputable def polyDivRightLinear (F : Type*) [Field F] {g : Polynomial F} (hg : g ≠ 0) :
     (LinearMap.range (polyMulRightLinear (F:=F) g)) →ₗ[F] Polynomial F :=
   (LinearEquiv.ofInjective (polyMulRightLinear (F:=F) g)
       (fun _ _ => mul_right_cancel₀ hg)).symm.toLinearMap
-
 noncomputable def stepanovHasseQuotMap
     (F : Type*) [Field F] {f : Polynomial F} (hf : f ≠ 0)
     (r k : ℕ) :
@@ -436,7 +373,6 @@ noncomputable def stepanovHasseQuotMap
   exact
     (polyDivRightLinear (F := F) (g := g) (pow_ne_zero _ hf)).comp
       (LinearMap.codRestrict (LinearMap.range mulG) numMap hmem)
-
 lemma stepanovHasseQuotMap_mul
     (F : Type*) [Field F] {f : Polynomial F} (hf : f ≠ 0)
     (r k : ℕ) (p : Polynomial F) :
@@ -465,7 +401,6 @@ by
     _ = numMap p := rfl
     _ = hasseDerivOp F k (p * f ^ r) := by
       simp [numMap, polyMulRightLinear, LinearMap.comp_apply, hasseDerivOp]
-
 lemma stepanovHasseQuotMap_eq_div
     (F : Type*) [Field F] {f : Polynomial F} (hf : f ≠ 0)
     (r k : ℕ) (p : Polynomial F) :
@@ -480,14 +415,12 @@ by
       (b := f ^ (r - k))
       (pow_ne_zero (r - k) hf)
       (hasseDerivOp_mul_pow_dvd F k r p f)).symm
-
 lemma stepanovHasseQuotMap_eq_div_left
     (F : Type*) [Field F] {f : Polynomial F} (hf : f ≠ 0)
     (r k : ℕ) (p : Polynomial F) :
     stepanovHasseQuotMap (F := F) (f := f) hf r k p =
       hasseDerivOp F k (f ^ r * p) / f ^ (r - k) :=
 by simpa [mul_comm] using stepanovHasseQuotMap_eq_div (F := F) hf r k p
-
 lemma stepanovHasseQuotMap_natDegree_le
     (F : Type*) [Field F] {f : Polynomial F} (hf : f ≠ 0)
     (m d r k : ℕ) (hfdeg : f.natDegree = m) (hk : k ≤ r)
@@ -506,7 +439,6 @@ by
       simpa [mul_comm] using hr_eq
     simpa [hmul] using hr_eq'
   simpa [h_eq] using hdeg_rjk
-
 lemma finrank_stepanov_constraint_space
     (F : Type*) [Field F] (ℓ J d m : ℕ) :
     Module.finrank F (∀ k : Fin ℓ, Polynomial.degreeLT F (J + d + k * (m - 1))) =
@@ -521,7 +453,6 @@ by
     _ = ∑ k ∈ Finset.range ℓ, (J + d + k * (m - 1)) := by
           simpa using
             (Fin.sum_univ_eq_sum_range (n := ℓ) (fun k => J + d + k * (m - 1)))
-
 lemma stepanov_system_has_solution
   (F : Type*) [Field F] [Fintype F]
   (f : Polynomial F) (q m ℓ : ℕ) (a : F)
@@ -594,15 +525,10 @@ by
       exact
         stepanovHasseQuotMap_natDegree_le (F := F) hf m d (ℓ + c) k.1 hfdeg hk_le
           _ (natDegree_le_of_mem_degreeLT_succ F d (piProj (finRight j) v))
-    have hdeg_sum :=
-      stepanov_sigma_degree_bound_fin (F := F) (d := d) (k := k) (m := m) (J := J)
-        (a := a) rjkFin sjkFin hdeg_r hdeg_s
-    have hsum :
-        sigmaMap k v =
-          ∑ j : Fin J, (rjkFin j + Polynomial.C a * sjkFin j) * Polynomial.X ^ (j : ℕ) := by
-      simp [sigmaMap, rjkFin, sjkFin, polyMulRightLinear,
-        LinearMap.add_apply, LinearMap.smul_apply, Polynomial.smul_eq_C_mul]
-    simpa [hsum] using hdeg_sum
+    simpa [sigmaMap, rjkFin, sjkFin, polyMulRightLinear,
+      LinearMap.add_apply, LinearMap.smul_apply, Polynomial.smul_eq_C_mul] using
+      (stepanov_sigma_degree_bound_fin (F := F) (d := d) (k := k) (m := m) (J := J)
+        (a := a) rjkFin sjkFin hdeg_r hdeg_s)
   let sigmaMapLT :
       (k : Fin ℓ) → V →ₗ[F] Polynomial.degreeLT F (J + d + k * (m - 1)) :=
     fun k =>
@@ -725,7 +651,6 @@ by
       simp [hpoly_zero]
     simpa [hsum_eval] using this
   refine ⟨rj, sj, h_nonzero, hdeg, hvan⟩
-
 lemma stepanov_constructed_nonzero
   (F : Type*) [Field F] [Fintype F] (hF : ringChar F ≠ 2)
   (f : Polynomial F) (q m ℓ J c d : ℕ)

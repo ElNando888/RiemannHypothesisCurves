@@ -1,6 +1,5 @@
 import Mathlib
 import RiemannHypothesisCurves.StepanovAuxiliary
-
 lemma stepanov_square_from_eq (F : Type*) [Field F]
     (f : Polynomial F) (r s : Polynomial F) (f₀ : F)
     (hf₀_ne_zero : f₀ ≠ 0) (hs_ne_zero : s ≠ 0)
@@ -53,14 +52,12 @@ by
       g * g =
           algebraMap (Polynomial K) L (sK * Polynomial.C α * (sK * Polynomial.C α)) /
             algebraMap (Polynomial K) L (rK * rK) := by
-          -- unfold `g` and clear denominators in the fraction field
           simp [g, map_mul, mul_assoc, mul_left_comm, mul_comm]
           ring
       _ =
           algebraMap (Polynomial K) L (rK * rK * fK) / algebraMap (Polynomial K) L (rK * rK) := by
           simpa [hnum]
       _ = algebraMap (Polynomial K) L fK := by
-          -- cancel the nonzero factor `rK * rK`
           simpa [map_mul, mul_assoc] using
             (mul_div_cancel_left₀ (b := algebraMap (Polynomial K) L fK)
               (a := algebraMap (Polynomial K) L (rK * rK)) hr2_ne)
@@ -71,7 +68,6 @@ by
   refine ⟨h, ?_⟩
   refine IsFractionRing.injective (Polynomial K) (FractionRing (Polynomial K)) ?_
   rw [map_mul, hh, hg_sq]
-
 lemma stepanov_nonzero_shift_preserves (F : Type*) [Field F] (f : Polynomial F)
     (a : AlgebraicClosure F)
     (hnsq : ¬∃ g : Polynomial (AlgebraicClosure F),
@@ -86,7 +82,6 @@ by
   have h := congrArg (fun p => p.comp (Polynomial.X - Polynomial.C a)) hg_sq
   simpa [Polynomial.mul_comp, Polynomial.comp_assoc, Polynomial.add_comp, Polynomial.X_comp,
     Polynomial.C_comp, sub_add_cancel, Polynomial.comp_X] using h
-
 lemma coefficient_transformation_shift (F : Type*) [Field F]
     (a : F) (q J : ℕ) (A : ℕ → Polynomial F) :
     ∑ j ∈ Finset.range J, A j * (Polynomial.X ^ q + Polynomial.C a) ^ j =
@@ -101,19 +96,18 @@ by
   have h_expand :
       ∑ j ∈ Finset.range J, A j * (Polynomial.X ^ q + Polynomial.C a) ^ j =
         ∑ j ∈ Finset.range J, ∑ k ∈ Finset.range (j + 1), B j k := by
-    refine Finset.sum_congr rfl ?_
-    intro j hj
-    simp [B, add_pow, Polynomial.smul_eq_C_mul, Finset.mul_sum, pow_mul, mul_comm, mul_left_comm]
+    refine Finset.sum_congr rfl (fun j hj => ?_)
+    simp [B, add_pow, Polynomial.smul_eq_C_mul, Finset.mul_sum, pow_mul, mul_comm, mul_left_comm] at hj ⊢
   have h_range (j : ℕ) (hj : j < J) :
       Finset.range (j + 1) = (Finset.range J).filter (fun k => k ≤ j) := by
     ext k
     constructor
     · intro hk
-      have hk_le : k ≤ j := Nat.lt_succ_iff.mp (Finset.mem_range.mp hk)
-      have hk_ltJ : k < J := lt_of_le_of_lt hk_le hj
-      exact (Finset.mem_filter).2 ⟨Finset.mem_range.2 hk_ltJ, hk_le⟩
+      have hk_le : k ≤ j := by simpa [Finset.mem_range, Nat.lt_succ_iff] using hk
+      refine (Finset.mem_filter).2 ?_
+      exact ⟨Finset.mem_range.2 (lt_of_le_of_lt hk_le hj), hk_le⟩
     · intro hk
-      rcases (Finset.mem_filter.1 hk) with ⟨-, hk_le⟩
+      rcases (Finset.mem_filter.1 hk) with ⟨_, hk_le⟩
       exact Finset.mem_range.2 (Nat.lt_succ_of_le hk_le)
   have h_filter_Ico (k : ℕ) :
       (Finset.range J).filter (fun j => k ≤ j) = Finset.Ico k J := by
@@ -148,7 +142,6 @@ by
               (f := fun j =>
                 (Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * A j)
               (a := Polynomial.X ^ (k * q))).symm
-
 lemma triangular_inversion_shift (F : Type*) [Field F]
     (a : F) (J : ℕ) (A : ℕ → Polynomial F)
     (hR : ∀ k < J,
@@ -179,7 +172,6 @@ by
       by_cases h_eq : j = J
       · simpa [h_eq] using hA_J
       · exact IH A hR' j (lt_of_le_of_ne (Nat.le_of_lt_succ hj) h_eq)
-
 lemma stepanov_nonzero_minimal_congruence
     (F : Type*) [Field F]
     (f : Polynomial F) (ℓ c q J : ℕ)
@@ -224,7 +216,6 @@ by
         (pow_ne_zero _ Polynomial.X_ne_zero)).mp ?_
   have hkq : (k + 1) * q = k * q + q := by ring
   simpa [pow_add, hkq, mul_comm, mul_left_comm, mul_assoc] using h_dvd_term
-
 lemma stepanov_nonzero_frobenius_mod (F : Type*) [Field F] [Fintype F]
     (f : Polynomial F) (q : ℕ) (hq : q = Fintype.card F) :
     Polynomial.X ^ q ∣ (f ^ q - Polynomial.C (f.eval 0)) :=
@@ -241,7 +232,6 @@ by
     simp [Polynomial.eval, Polynomial.eval₂_at_zero]
   · simp [Nat.not_dvd_of_pos_of_lt (Nat.pos_of_ne_zero hd0) hd,
       hd0, Polynomial.coeff_C]
-
 lemma stepanov_nonzero_polynomial_equality
   (F : Type*) [Field F] [Fintype F] (hF : ringChar F ≠ 2)
   (f r s : Polynomial F) (q m c : ℕ)
@@ -274,8 +264,7 @@ by
         (mul_self_sub_mul_self (a := r) (b := s * f ^ c)).symm
     simpa [hdsq] using htmp
   have hpow : f ^ c * f ^ c * f = f ^ (2 * c + 1) := by
-    have : f ^ c * f ^ c * f = f ^ (c + c + 1) := by
-      simp [pow_add, pow_succ, mul_comm]
+    have : f ^ c * f ^ c * f = f ^ (c + c + 1) := by simp [pow_add, pow_succ, mul_comm]
     simpa [two_mul, Nat.add_assoc] using this
   have hdiv2 : Polynomial.X ^ q ∣ r * r * f - s * s * f ^ (2 * c + 1) := by
     have htmp : Polynomial.X ^ q ∣ f * (r * r - (s * f ^ c) * (s * f ^ c)) :=
@@ -283,11 +272,9 @@ by
     have hrewrite :
         f * (r * r - (s * f ^ c) * (s * f ^ c)) =
           r * r * f - s * s * f ^ (2 * c + 1) := by
-      -- a straightforward distributivity + regrouping step
       calc
         f * (r * r - (s * f ^ c) * (s * f ^ c)) =
-            f * (r * r) - f * ((s * f ^ c) * (s * f ^ c)) := by
-              simp [mul_sub]
+            f * (r * r) - f * ((s * f ^ c) * (s * f ^ c)) := by simp [mul_sub]
         _ = r * r * f - s * s * (f ^ c * f ^ c * f) := by
               simp [mul_assoc, mul_left_comm, mul_comm]
         _ = r * r * f - s * s * f ^ (2 * c + 1) := by
@@ -300,8 +287,8 @@ by
       (dvd_mul_of_dvd_right
         (stepanov_nonzero_frobenius_mod (F := F) (f := f) (q := q) hq) (s * s))
   have hdiv_final : Polynomial.X ^ q ∣ r * r * f - s * s * Polynomial.C (f.eval 0) := by
-    have h := dvd_add hdiv2' hdiv3
-    simpa [sub_eq_add_neg, add_comm, add_left_comm, add_assoc, mul_comm, mul_left_comm, mul_assoc] using h
+    simpa [sub_eq_add_neg, add_comm, add_left_comm, add_assoc, mul_comm, mul_left_comm, mul_assoc] using
+      dvd_add hdiv2' hdiv3
   have hdeg_r2f_lt : (r * r * f).natDegree < q := by
     refine lt_of_le_of_lt ?_ hrdeg
     have h2 : (r * r).natDegree ≤ 2 * r.natDegree := by
@@ -333,7 +320,6 @@ by
     refine Polynomial.eq_zero_of_dvd_of_natDegree_lt hdiv_final ?_
     simpa [Polynomial.natDegree_X_pow] using hdeg_diff_lt
   exact sub_eq_zero.mp hdiff_zero
-
 lemma degree_bound_implies_two_mul_add_lt (q m n : ℕ) (hqm : m < q)
     (hn : n ≤ Nat.ceil (((q : ℚ) - m) / 2) - 1) : 2 * n + m < q :=
 by
@@ -343,7 +329,6 @@ by
     Nat.lt_ceil.mp <| Nat.lt_of_le_pred (Nat.ceil_pos.mpr hx_pos) hn
   exact_mod_cast
     (show (2 : ℚ) * n + m < (q : ℚ) from by nlinarith [hn_lt])
-
 lemma stepanov_nonzero_eval_zero (F : Type*) [Field F] [Fintype F] (hF : ringChar F ≠ 2)
     (f : Polynomial F) (q m ℓ J c : ℕ) (hc : c = (q - 1) / 2)
     (hq : q = Fintype.card F) (hfdeg : f.natDegree = m)
@@ -407,7 +392,6 @@ by
         obtain ⟨hrj, hsj⟩ := hall j (Finset.mem_range.mp hj)
         simp [hrj, hsj]
     simp [hsum_zero]
-
 lemma coefficient_transformation_degree_bound
     (F : Type*) [Field F]
     (a : F) (J d : ℕ) (A : ℕ → Polynomial F)
@@ -437,7 +421,6 @@ by
         (by simp))
   simpa [Nat.zero_add]
     using Nat.add_le_add_right hconst (A j).natDegree
-
 lemma stepanov_nonzero (F : Type*) [Field F] [Fintype F] (hF : ringChar F ≠ 2)
     (f : Polynomial F) (q m ℓ J c : ℕ) (hc : c = (q - 1) / 2)
     (hq : q = Fintype.card F) (hfdeg : f.natDegree = m)
@@ -463,11 +446,7 @@ by
           (hq6m := hq6m) (hf0 := hf0)
           (rj := rj) (sj := sj) (hnsq := hnsq) (hdeg := hdeg)).mp hsum
     · have hqm : q > m :=
-        lt_of_le_of_lt
-          (by
-            have h := Nat.mul_le_mul_right m (by decide : (1 : ℕ) ≤ 6)
-            simpa using h)
-          hq6m
+        lt_of_le_of_lt (Nat.le_mul_of_pos_left m (by decide : 0 < 6)) (by simpa [Nat.mul_comm] using hq6m)
       obtain ⟨a, hfa_ne⟩ :=
         Polynomial.exists_eval_ne_zero_of_natDegree_lt_card f
           (by
@@ -481,10 +460,8 @@ by
       let g : Polynomial F := f.comp shift
       let rj' : ℕ → Polynomial F := fun j => (rj j).comp shift
       let sj' : ℕ → Polynomial F := fun j => (sj j).comp shift
-      have hg0_ne : g.eval 0 ≠ 0 := by
-        simpa [g, shift] using hfa_ne
-      have hgdeg : g.natDegree = m := by
-        simp [g, shift, hfdeg, Polynomial.natDegree_comp]
+      have hg0_ne : g.eval 0 ≠ 0 := by simpa [g, shift] using hfa_ne
+      have hgdeg : g.natDegree = m := by simp [g, shift, hfdeg, Polynomial.natDegree_comp]
       have hnsq_g :
           ¬ ∃ h : Polynomial (AlgebraicClosure F),
               h * h = Polynomial.map (algebraMap F (AlgebraicClosure F)) g := by
@@ -500,10 +477,8 @@ by
       have hg1 :
           g ^ ℓ *
               Finset.sum (Finset.range J)
-                (fun j =>
-                  ((rj' j) + (sj' j) * g ^ c) * shift ^ (j * q)) = 0 := by
-        simpa [shift, g, rj', sj'] using
-          congrArg (fun p : Polynomial F => p.comp shift) hsum
+                (fun j => ((rj' j) + (sj' j) * g ^ c) * shift ^ (j * q)) = 0 := by
+        simpa [shift, g, rj', sj'] using congrArg (fun p : Polynomial F => p.comp shift) hsum
       let t : Polynomial F := Polynomial.X ^ q + Polynomial.C a
       have hshift_q : shift ^ q = t := by
         have hexpand : Polynomial.expand F q shift = t := by
@@ -514,12 +489,10 @@ by
       have hg2' :
           g ^ ℓ *
               (∑ j ∈ Finset.range J, ((rj' j) + (sj' j) * g ^ c) * t ^ j) = 0 := by
-        -- rewrite `shift ^ (j*q)` as `(shift^q)^j`, then use `shift^q = t`.
         simpa [t, Nat.mul_comm, pow_mul, hshift_q] using hg1
       let sum_total : Polynomial F :=
         ∑ j ∈ Finset.range J, ((rj' j) + (sj' j) * g ^ c) * t ^ j
-      have hg2'' : g ^ ℓ * sum_total = 0 := by
-        simpa [sum_total] using hg2'
+      have hg2'' : g ^ ℓ * sum_total = 0 := by simpa [sum_total] using hg2'
       let sum_r : Polynomial F :=
         ∑ j ∈ Finset.range J, rj' j * t ^ j
       let sum_s_base : Polynomial F :=
@@ -528,8 +501,7 @@ by
           sum_total = sum_r + g ^ c * sum_s_base := by
         classical
         unfold sum_total sum_r sum_s_base
-        simp [Finset.mul_sum, Finset.sum_add_distrib, add_mul, mul_add, mul_assoc,
-          mul_left_comm, mul_comm]
+        simp [Finset.mul_sum, Finset.sum_add_distrib, add_mul, mul_add, mul_assoc, mul_left_comm, mul_comm]
       let R : ℕ → Polynomial F := fun k =>
         ∑ j ∈ Finset.Ico k J,
           (Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * rj' j
@@ -537,27 +509,20 @@ by
         ∑ j ∈ Finset.Ico k J,
           (Nat.choose j k : F) • (Polynomial.C a) ^ (j - k) * sj' j
       have hcoeff_r :
-          sum_r =
-            ∑ k ∈ Finset.range J,
-              R k * Polynomial.X ^ (k * q) := by
+          sum_r = ∑ k ∈ Finset.range J, R k * Polynomial.X ^ (k * q) := by
         unfold sum_r R t
         simpa using
-          (coefficient_transformation_shift (F := F)
-            (a := a) (q := q) (J := J) (A := rj'))
+          (coefficient_transformation_shift (F := F) (a := a) (q := q) (J := J) (A := rj'))
       have hcoeff_s_base :
-          sum_s_base =
-            ∑ k ∈ Finset.range J,
-              S k * Polynomial.X ^ (k * q) := by
+          sum_s_base = ∑ k ∈ Finset.range J, S k * Polynomial.X ^ (k * q) := by
         unfold sum_s_base t S
         simpa using
-          (coefficient_transformation_shift (F := F)
-            (a := a) (q := q) (J := J) (A := sj'))
+          (coefficient_transformation_shift (F := F) (a := a) (q := q) (J := J) (A := sj'))
       have hsum_total_eq :
           sum_total =
             ∑ k ∈ Finset.range J,
               (R k + S k * g ^ c) * Polynomial.X ^ (k * q) := by
         classical
-        -- straight-line `simp` after rewriting the three named sums
         simp [hsum_split, hcoeff_r, hcoeff_s_base, Finset.mul_sum, Finset.sum_add_distrib,
           add_mul, mul_add, mul_assoc, mul_left_comm, mul_comm]
       have hg3 :
