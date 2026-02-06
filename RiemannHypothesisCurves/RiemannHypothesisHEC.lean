@@ -161,73 +161,30 @@ by
         = (ℓ : ℝ) ^ 2 * (m : ℝ) := by
       simp [hfdeg, Nat.cast_mul, pow_two, mul_comm]
     simpa [h1, h2, h3] using hdegR
-  have hq_le_ℓsq : (q : ℝ) ≤ (ℓ : ℝ) ^ 2 := by
-    have h_sq_le :
-        Real.sqrt q * Real.sqrt q ≤ (ℓ : ℝ) * (ℓ : ℝ) :=
-      mul_self_le_mul_self (a := Real.sqrt q) (b := (ℓ : ℝ))
-        (Real.sqrt_nonneg _) h_sqrt_le_ℓ
-    have hsq_eq : Real.sqrt q * Real.sqrt q = (q : ℝ) := by simp
-    simpa [hsq_eq, pow_two] using h_sq_le
-  have h_mq_le_mℓsq :
-      (m : ℝ) * (q : ℝ)
-        ≤ (m : ℝ) * (ℓ : ℝ) ^ 2 := by
-    have :=
-      mul_le_mul_of_nonneg_left hq_le_ℓsq
-        (by exact_mod_cast (Nat.zero_le m) : 0 ≤ (m : ℝ))
-    simpa [mul_comm, mul_left_comm, mul_assoc] using this
   have hdegR_upper :
       (R.natDegree : ℝ)
         < (ℓ : ℝ) * (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) ^ 2 := by
-    have h1 :
-        (m : ℝ) * (q : ℝ) + (ℓ : ℝ) ^ 2 * (m : ℝ)
-          ≤ (m : ℝ) * (ℓ : ℝ) ^ 2 + (ℓ : ℝ) ^ 2 * (m : ℝ) :=
-      add_le_add_right h_mq_le_mℓsq _
-    have h2 :
-        (m : ℝ) * (ℓ : ℝ) ^ 2 + (ℓ : ℝ) ^ 2 * (m : ℝ)
-          = 2 * (m : ℝ) * (ℓ : ℝ) ^ 2 := by
-      calc
-        (m : ℝ) * (ℓ : ℝ) ^ 2 + (ℓ : ℝ) ^ 2 * (m : ℝ)
-            = (m : ℝ) * (ℓ : ℝ) ^ 2 + (m : ℝ) * (ℓ : ℝ) ^ 2 := by
-              simp [mul_comm]
-        _ = 2 * (m : ℝ) * (ℓ : ℝ) ^ 2 := by ring
-    have h3 :
-        (m : ℝ) * (q : ℝ) + (ℓ : ℝ) ^ 2 * (m : ℝ)
-          ≤ 2 * (m : ℝ) * (ℓ : ℝ) ^ 2 := by
-      simpa [h2] using h1
-    have h4 :
-        (m : ℝ) * (q : ℝ) + (ℓ : ℝ) * (q : ℝ) / 2
-          + (ℓ : ℝ) ^ 2 * (m : ℝ)
-          ≤ (ℓ : ℝ) * (q : ℝ) / 2
-            + 2 * (m : ℝ) * (ℓ : ℝ) ^ 2 := by
-      have := add_le_add_left h3 ((ℓ : ℝ) * (q : ℝ) / 2)
-      simpa [add_comm, add_left_comm, add_assoc] using this
-    exact lt_of_lt_of_le hdegR' h4
+    have hq_le_ℓsq : (q : ℝ) ≤ (ℓ : ℝ) ^ 2 := by
+      have h :=
+        mul_self_le_mul_self (Real.sqrt_nonneg (q : ℝ)) h_sqrt_le_ℓ
+      simpa [pow_two,
+        Real.mul_self_sqrt (by
+          exact_mod_cast (Nat.zero_le q) : (0 : ℝ) ≤ (q : ℝ))] using h
+    have hmq : (m : ℝ) * (q : ℝ) ≤ (m : ℝ) * (ℓ : ℝ) ^ 2 := by
+      have hm_nonneg : (0 : ℝ) ≤ (m : ℝ) := by exact_mod_cast (Nat.zero_le m)
+      exact mul_le_mul_of_nonneg_left hq_le_ℓsq hm_nonneg
+    nlinarith [hdegR', hmq]
   have hdeg_div_main :
       (R.natDegree : ℝ) / (ℓ : ℝ)
         < (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) := by
-    have hdeg_div :
-        (R.natDegree : ℝ) / (ℓ : ℝ)
-          < ((ℓ : ℝ) * (q : ℝ) / 2
-              + 2 * (m : ℝ) * (ℓ : ℝ) ^ 2) / (ℓ : ℝ) := by
-      have := mul_lt_mul_of_pos_right hdegR_upper (inv_pos.mpr hℓ_pos_real)
-      simpa [div_eq_mul_inv] using this
-    have h_upper_simpl :
+    have hℓ_ne : (ℓ : ℝ) ≠ 0 := ne_of_gt hℓ_pos_real
+    have hdiv :=
+      (div_lt_div_of_pos_right hdegR_upper hℓ_pos_real)
+    have hsimp :
         ((ℓ : ℝ) * (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) ^ 2) / (ℓ : ℝ)
           = (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) := by
-      have hneq : (ℓ : ℝ) ≠ 0 := ne_of_gt hℓ_pos_real
-      calc
-        ((ℓ : ℝ) * (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) ^ 2) / (ℓ : ℝ)
-            = (ℓ : ℝ) * (q : ℝ) / 2 / (ℓ : ℝ)
-                + (2 * (m : ℝ) * (ℓ : ℝ) ^ 2) / (ℓ : ℝ) := by
-                  field_simp [add_comm, add_left_comm, add_assoc]
-        _ = (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) := by
-          have h1 : (ℓ : ℝ) * (q : ℝ) / 2 / (ℓ : ℝ) = (q : ℝ) / 2 := by
-            field_simp [hneq, mul_comm, mul_left_comm, mul_assoc]
-          have h2 : (2 * (m : ℝ) * (ℓ : ℝ) ^ 2) / (ℓ : ℝ)
-              = 2 * (m : ℝ) * (ℓ : ℝ) := by
-            field_simp [hneq, pow_two, mul_comm, mul_left_comm, mul_assoc]
-          simp [h1, h2]
-    simpa [h_upper_simpl] using hdeg_div
+      field_simp [hℓ_ne]
+    simpa [hsimp] using hdiv
   have :
       (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} : ℝ)
         < (q : ℝ) / 2 + 2 * (m : ℝ) * (ℓ : ℝ) :=
