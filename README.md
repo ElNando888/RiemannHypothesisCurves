@@ -22,7 +22,7 @@ Then open `blueprint/dep_graph_document.html`.
 
 ## Highlights
 
-- **Scope:** ≈2900 lines of Lean (tracked Lean LOC: 2899).
+- **Scope:** ≈2850 lines of Lean (tracked Lean LOC: 2852).
 - **Workflow:** AI-generated formalization from a LaTeX blueprint with human scaffolding.
 - **Result:** a complete Lean theorem establishing the Riemann Hypothesis for hyperelliptic curves over finite fields.
 
@@ -63,6 +63,7 @@ Lean LOC is computed as the total number of lines across all git-tracked `*.lean
 | `b9f6574` | 2026-02-05 | Docs: update README Lean LOC table | 3431 | 3431 | +0 |
 | `6a28759` | 2026-02-05 | Refactor: slim core proof files | 3431 | 3038 | -393 |
 | `fee6341` | 2026-02-05 | Refactor: slim Stepanov auxiliary/system/nonsquare | 3038 | 2899 | -139 |
+| `17a994d` | 2026-02-05 | Refactor: slim HasseDerivatives/HEC | 2899 | 2852 | -47 |
 
 To regenerate this table locally:
 
