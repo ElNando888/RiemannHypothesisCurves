@@ -4,9 +4,11 @@ This is a formal Lean proof of the Riemann Hypothesis for hyperelliptic curves o
 
 Given a polynomial $f(x)$ of degree $m > 2$, let $F=\mathbb{F}_q$ be the finite field for the prime power $q > 6m$. Then the number of solutions to $y^2 = f(x)$ for $(x,y) \in F^2$ is bounded from the expected value of $q$ by at most $5m q^{1/2}$. This square-root cancellation is the analogue of the celebrated Riemann Hypothesis, for counting points on the hyperelliptic curve $y^2 = f(x)$.
 
-The final Lean output is in `RiemannHypothesisHEC.lean`. The human-supplied blueprint is in `content.tex`.
+The final Lean output is in `RiemannHypothesisCurves/RiemannHypothesisHEC.lean` (imported by
+`RiemannHypothesisCurves/Main.lean`). The human-supplied blueprint is in `blueprint/src/content.tex`.
 
-All statements, proofs, and documentation were created by Gauss, Math Inc's frontier autoformalization agent.
+The initial statements, proofs, and documentation were created by Gauss, Math Inc's frontier
+autoformalization agent; subsequent commits on this branch include human/AI-assisted refactors.
 
 The blueprint dependency graph is generated as part of the blueprint web build:
 
@@ -26,9 +28,10 @@ Then open `blueprint/dep_graph_document.html`.
 
 ---
 
-## Refactor progress (LOC by commit)
+## Refactor progress (LOC by commit on `origin/refactor`)
 
 LOC is computed as the total number of lines across all git-tracked files at each commit (including comments/blank lines).
+Note: this metric counts newlines in *all* tracked files, including binaries (e.g. images), so it can jump when assets change.
 
 | Commit | Date | Message | LOC before | LOC after | Δ |
 |---|---|---|---:|---:|---:|
@@ -41,8 +44,21 @@ LOC is computed as the total number of lines across all git-tracked files at eac
 | `86e39a9` | 2026-02-05 | Refactor: simplify m<q derivations | 6728 | 6721 | -7 |
 | `9c63e29` | 2026-02-05 | Refactor: use LinearMap.mulRight for polyMulRightLinear | 6721 | 6715 | -6 |
 | `3ff5e35` | 2026-02-05 | Refactor: use LinearMap.proj for piProj | 6715 | 6713 | -2 |
+| `1d58860` | 2026-02-05 | Docs: add LOC-by-commit progress table | 6713 | 6768 | +55 |
+| `237e8cc` | 2026-02-05 | Refactor: streamline sigma degree bound | 6768 | 6769 | +1 |
+| `37ae41a` | 2026-02-05 | Refactor: simplify J-expression positivity | 6769 | 6765 | -4 |
+| `1bb053e` | 2026-02-05 | Refactor: simplify Bmax bound arithmetic | 6765 | 6752 | -13 |
+| `dea1919` | 2026-02-05 | Refactor: shorten q-cancellation step | 6752 | 6749 | -3 |
+| `50568f4` | 2026-02-05 | Refactor: streamline A_real lower bound | 6749 | 6733 | -16 |
+| `605a045` | 2026-02-05 | Refactor: streamline curve fiber bound | 6733 | 6721 | -12 |
+| `37130e4` | 2026-02-05 | Refactor: simplify curve count lower bound | 6721 | 6695 | -26 |
+| `1760642` | 2026-02-05 | Refactor: drop unused module; simplify bounds | 6695 | 5748 | -947 |
+| `5bf539a` | 2026-02-05 | Fix imports: restore StepanovNonSquare and update dependencies | 5748 | 6623 | +875 |
+| `cdac43b` | 2026-02-05 | Merge gpt52-shrink20 (shrink blueprint graph image) | 6623 | 5718 | -905 |
+| `107212d` | 2026-02-05 | Refactor: shorten Stepanov bound algebra | 5718 | 5675 | -43 |
+| `5481845` | 2026-02-05 | Chore: ignore work copies; document workflow | 5675 | 5693 | +18 |
 
-To regenerate this table locally:
+To regenerate this table locally (after `git fetch origin`):
 
 ```bash
 python3 - <<'PY'
@@ -61,7 +77,8 @@ def loc_for_commit(commit: str) -> int:
             total += 1
     return total
 
-commits = sh('git', 'rev-list', '--reverse', '--first-parent', 'HEAD').splitlines()
+target = 'origin/refactor'
+commits = sh('git', 'rev-list', '--reverse', '--first-parent', target).splitlines()
 rows = []
 prev_loc = 0
 for i, c in enumerate(commits):
