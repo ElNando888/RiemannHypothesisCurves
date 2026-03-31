@@ -1,25 +1,25 @@
-name           = "RiemannHypothesisCurves"
+name = "RiemannHypothesisCurves"
 defaultTargets = ["RiemannHypothesisCurves"]
 
 [leanOptions]
-pp.unicode.fun                 = true
-relaxedAutoImplicit            = false
+pp.unicode.fun = true
+relaxedAutoImplicit = false
 weak.linter.mathlibStandardSet = true
-maxSynthPendingDepth           = 3
+maxSynthPendingDepth = 3
 
 [[require]]
 name = "mathlib"
-git  = "https://github.com/leanprover-community/mathlib4.git"
-rev  = "v4.26.0-rc2"
+git = "https://github.com/leanprover-community/mathlib4.git"
+rev = "v4.28.0"
 
 [[require]]
 name = "checkdecls"
-git  = "https://github.com/PatrickMassot/checkdecls.git"
+git = "https://github.com/PatrickMassot/checkdecls.git"
 
 [[require]]
 name = "«doc-gen4»"
-git  = "https://github.com/leanprover/doc-gen4"
-rev  = "v4.26.0-rc2"
+git = "https://github.com/leanprover/doc-gen4"
+rev = "v4.28.0"
 
 [[lean_lib]]
 name = "RiemannHypothesisCurves"

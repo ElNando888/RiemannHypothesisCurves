@@ -1,4 +1,12 @@
-import Mathlib
+/-
+Copyright (c) 2026 Math Inc. All rights reserved.
+-/
+
+import Mathlib.Algebra.Polynomial.HasseDeriv
+import Mathlib.Algebra.Polynomial.FieldDivision
+import Mathlib.Algebra.Polynomial.Taylor
+import Mathlib.Algebra.Order.Antidiag.Pi
+
 noncomputable def hasseDerivOp (F : Type*) [Field F] (k : ℕ) : Polynomial F → Polynomial F :=
   Polynomial.hasseDeriv k
 
@@ -74,7 +82,7 @@ lemma hasseLeibniz_general (F : Type*) [Field F] (k r : ℕ) (f : Fin r → Poly
         refine hmul.trans (by
           refine Finset.sum_congr rfl ?_
           intro p hp
-          simp [ih p.2, Finset.mul_sum, mul_assoc])
+          simp [ih p.2, Finset.mul_sum])
       have hR :
           (∑ j ∈ u.piAntidiag k, w j) =
             ∑ p ∈ Finset.antidiagonal k,
@@ -99,12 +107,7 @@ lemma hasseLeibniz_general (F : Type*) [Field F] (k r : ℕ) (f : Fin r → Poly
         refine (this.trans ?_)
         refine Finset.sum_congr rfl ?_
         intro p hp
-        simpa using
-          (Finset.sum_map
-            (s := s.piAntidiag p.2)
-            (f := fun g => w ((addRightEmbedding (fun t => if t = a then p.1 else 0)) g))
-            (g := fun j => w j)
-            (e := addRightEmbedding (fun t => if t = a then p.1 else 0)))
+        simp only [Finset.sum_map]
       have hw :
           ∀ p ∈ Finset.antidiagonal k, ∀ g ∈ s.piAntidiag p.2,
             w ((addRightEmbedding (fun t => if t = a then p.1 else 0)) g) =
@@ -125,7 +128,7 @@ lemma hasseLeibniz_general (F : Type*) [Field F] (k r : ℕ) (f : Fin r → Poly
         dsimp [w, u]
         rw [Finset.prod_cons (s := s) (a := a)
           (f := fun i => hasseDerivOp F (g i + if i = a then p.1 else 0) (f i)) ha]
-        simpa [hga, hprod_s, mul_assoc]
+        simp [hga, hprod_s]
       refine hL.trans ?_
       refine (hR.trans ?_).symm
       refine Finset.sum_congr rfl ?_
@@ -164,7 +167,7 @@ lemma hasseDerivOp_X_sub_C_pow (F : Type*) [Field F] (k r : ℕ) (hk : k ≤ r) 
           (Nat.choose r (n + k) * Nat.choose (n + k) k : ℕ) =
             Nat.choose r k * Nat.choose (r - k) n := by
         simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using
-          (Nat.choose_mul (n := r) (k := n + k) (s := k) hnk hsk)
+          (Nat.choose_mul (n := r) (k := n + k) (s := k) hsk)
       have h_natF :
           ((Nat.choose r (n + k) * Nat.choose (n + k) k : ℕ) : F) =
             (Nat.choose r k * Nat.choose (r - k) n : ℕ) := by
@@ -206,9 +209,9 @@ lemma hasseDerivOp_X_sub_C_pow (F : Type*) [Field F] (k r : ℕ) (hk : k ≤ r) 
           simp [hcoeff_pow2]
       _ = (-a) ^ (r - (n + k)) *
             ((Nat.choose r k : F) * (Nat.choose (r - k) n : F)) := by
-          simp [hexp, mul_assoc, mul_left_comm, mul_comm]
+          simp [hexp, mul_assoc, mul_comm]
   rw [hL, hR]
-  simpa [hscalar]
+  simp [hscalar]
 
 lemma hasseDerivOp_prod_single_polynomial_dvd (F : Type*) [Field F] (k r : ℕ) (g : Polynomial F)
     (j : Fin r → Fin (k + 1)) (h_sum : (Finset.univ : Finset (Fin r)).sum (fun i => (j i).val) = k) :
@@ -248,7 +251,7 @@ lemma hasseDerivOp_prod_single_polynomial_dvd (F : Type*) [Field F] (k r : ℕ) 
   have hcard :
       Z.card + NZ.card = s.card := by
     simpa [Z, NZ] using
-      (Finset.filter_card_add_filter_neg_card_eq_card
+      (Finset.card_filter_add_card_filter_not
         (s := s) (p := fun i : Fin r => (j i).val = 0))
   have hZ_card_ge : r - k ≤ Z.card := by
     have hsum_le : Z.card + NZ.card ≤ Z.card + k :=
@@ -266,7 +269,7 @@ lemma hasseDerivOp_prod_single_polynomial_dvd (F : Type*) [Field F] (k r : ℕ) 
               have : (j i).val = 0 := (Finset.mem_filter.1 hi).2
               simp [hasseDerivOp, this]
       _ = g ^ Z.card := by
-            simpa using (Finset.prod_const (s := Z) (b := g))
+            simp only [Finset.prod_const]
   have hdiv_Z : g ^ (r - k) ∣ Z.prod (fun i => hasseDerivOp F (j i).val g) := by
     simpa [hZprod] using pow_dvd_pow g hZ_card_ge
   have hprod_split :
@@ -378,7 +381,7 @@ lemma hasse_formulas (F : Type*) [Field F] (k r : ℕ) (hk : k ≤ r) :
               have := congrArg Polynomial.natDegree hmul.symm
               simpa [Polynomial.natDegree_mul (p := den) (q := q) hden_ne hq_ne] using this
             have hden_nat : den.natDegree = (r - k) * g.natDegree := by
-              simp [den, hg]
+              simp [den]
             have hq_nat_le : q.natDegree ≤ f.natDegree + k * g.natDegree - k := by
               have hsub :
                   num.natDegree - den.natDegree ≤ (f.natDegree + r * g.natDegree - k) - den.natDegree :=
@@ -393,9 +396,9 @@ lemma hasse_formulas (F : Type*) [Field F] (k r : ℕ) (hk : k ≤ r) :
                 calc
                   (f.natDegree + r * g.natDegree - k) - den.natDegree
                       = (f.natDegree + r * g.natDegree) - (k + den.natDegree) := by
-                          simp [Nat.sub_sub, Nat.add_assoc]
+                          simp [Nat.sub_sub]
                   _ = (f.natDegree + (k * g.natDegree + den.natDegree)) - (k + den.natDegree) := by
-                          simp [hr_mul, hden_nat, Nat.add_assoc]
+                          simp [hr_mul, hden_nat]
                   _ = (f.natDegree + k * g.natDegree) - k := by
                           simpa [Nat.add_assoc] using
                             (Nat.add_sub_add_right (f.natDegree + k * g.natDegree) den.natDegree k)

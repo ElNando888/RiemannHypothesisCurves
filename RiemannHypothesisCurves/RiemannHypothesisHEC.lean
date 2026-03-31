@@ -1,6 +1,12 @@
-import Mathlib
+/-
+Copyright (c) 2026 Math Inc. All rights reserved.
+-/
+
 import RiemannHypothesisCurves.StepanovPolynomial
 import RiemannHypothesisCurves.Utils
+import Mathlib.Data.Real.Sqrt
+import Mathlib.Tactic.NormNum.RealSqrt
+
 noncomputable def hyperellipticCurve (F : Type*) [Field F] (f : Polynomial F) : Set (F × F) :=
   {p | p.2 ^ 2 = Polynomial.eval p.1 f}
 
@@ -118,7 +124,7 @@ lemma riemann_hypothesis_stepanov_bound (F : Type*) [Field F] [Fintype F] [Decid
       hasse_vanishing_card_bound (F := F) (r := R) (ℓ := ℓ) (S := Sfin) hR_ne hℓ_pos hvan_S
     have h_card_subtype_eq :
         (Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} : ℝ) = (Sfin.card : ℝ) := by
-      exact_mod_cast (by simpa [Sfin] :
+      exact_mod_cast (by simp [Sfin] :
         Fintype.card {x : F // x ∈ S_a F f ((q - 1) / 2) a} = Sfin.card)
     simpa [h_card_subtype_eq] using h_card_Sfin_le
   have hdegR' :
@@ -206,7 +212,7 @@ by
                 simpa [proj] using congrArg Subtype.val p₁.2
               have hx₂ : p₂.1.1.1 = y.1 := by
                 simpa [proj] using congrArg Subtype.val p₂.2
-              simpa [hx₁, hx₂]
+              simp [hx₁, hx₂]
             · exact congrArg Subtype.val h)
       exact le_trans h_inj (card_sq_eq_le_two (F := F) (a := Polynomial.eval y.1 f))
     have h_count : Fintype.card curveSet ≤ 2 * Fintype.card S1_set := by
@@ -261,7 +267,7 @@ by
     ⟨⟨xb.1.1, yval xb.1 xb.2⟩, by
       have : (root xb.1) ^ 2 = Polynomial.eval xb.1.1 f := by
         simpa [pow_two] using (hroot xb.1).symm
-      cases xb.2 <;> simp [yval, this, neg_sq]⟩
+      cases xb.2 <;> simp [yval, this]⟩
   have hφ_inj : Function.Injective φ := by
     rintro ⟨x, b⟩ ⟨x', b'⟩ h
     have hx : x = x' := by
