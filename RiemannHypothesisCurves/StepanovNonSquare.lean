@@ -9,6 +9,8 @@ import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.RingTheory.IntegralClosure.IntegrallyClosed
 import Mathlib.RingTheory.Polynomial.IsIntegral
 
+set_option linter.style.longLine false
+
 lemma stepanov_square_from_eq (F : Type*) [Field F] (f : Polynomial F) (r s : Polynomial F) (f₀ : F)
     (hf₀_ne_zero : f₀ ≠ 0) (hs_ne_zero : s ≠ 0) (heq : r * r * f = s * s * Polynomial.C f₀) :
     ∃ g : Polynomial (AlgebraicClosure F),
@@ -97,8 +99,7 @@ lemma coefficient_transformation_shift (F : Type*) [Field F] (a : F) (q J : ℕ)
   have h_range (j : ℕ) (hj : j < J) :
       Finset.range (j + 1) = (Finset.range J).filter (fun k => k ≤ j) := by
     ext k; constructor <;> intro hk
-    ·
-      have hk_le : k ≤ j := by simpa [Finset.mem_range, Nat.lt_succ_iff] using hk
+    · have hk_le : k ≤ j := by simpa [Finset.mem_range, Nat.lt_succ_iff] using hk
       exact (Finset.mem_filter).2 ⟨Finset.mem_range.2 (lt_of_le_of_lt hk_le hj), hk_le⟩
     · rcases (Finset.mem_filter.1 hk) with ⟨_, hk_le⟩; exact Finset.mem_range.2 (Nat.lt_succ_of_le hk_le)
   have h_filter_Ico (k : ℕ) :

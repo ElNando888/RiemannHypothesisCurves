@@ -6,6 +6,8 @@ Copyright (c) 2026 Math Inc. All rights reserved.
 import RiemannHypothesisCurves.HasseDerivatives
 import Mathlib.FieldTheory.Finite.Basic
 
+set_option linter.style.longLine false
+
 lemma auxiliary_derivatives (F : Type*) [Field F] (f : Polynomial F) (m d ℓ c : ℕ)
     (hfdeg : f.natDegree = m) (rj sj : Polynomial F) (hr : rj.natDegree ≤ d) (hs : sj.natDegree ≤ d)
     (k : ℕ) (hk : k ≤ ℓ) :
@@ -147,7 +149,7 @@ lemma hasseDerivOp_mul_Xqpow (F : Type*) [Field F] [Fintype F] (q k : ℕ) (hq :
         ((1 + (Polynomial.X : Polynomial F)) ^ (j * q)).coeff i = 0 := by
       simpa [hpow] using hcoeff_right_zero
     simpa [Polynomial.coeff_one_add_X_pow (R := F) (n := j * q) (k := i)] using hcoeff_left_zero
-
+  /- -/
   cases k with
   | zero =>
       simp [hasseDerivOp, mul_comm]

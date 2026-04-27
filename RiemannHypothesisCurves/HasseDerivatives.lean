@@ -7,6 +7,8 @@ import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.Algebra.Polynomial.Taylor
 import Mathlib.Algebra.Order.Antidiag.Pi
 
+set_option linter.style.longLine false
+
 noncomputable def hasseDerivOp (F : Type*) [Field F] (k : ℕ) : Polynomial F → Polynomial F :=
   Polynomial.hasseDeriv k
 
@@ -288,7 +290,7 @@ lemma hasseDerivOp_pow_dvd (F : Type*) [Field F] (k r : ℕ) :
     ∀ g : Polynomial F, g ^ (r - k) ∣ hasseDerivOp F k (g ^ r) := by
   intro g
   have hLeib' := hasseLeibniz_general F k r (fun _ : Fin r => g)
-  simp [Finset.card_univ, Fintype.card_fin] at hLeib'
+  simp only [Finset.prod_const, Finset.card_univ, Fintype.card_fin] at hLeib'
   rw [hLeib']
   refine Finset.dvd_sum ?_
   intro j hj
@@ -425,7 +427,7 @@ lemma hasse_divisibility (F : Type*) [Field F] (f : Polynomial F) (a : F) (ℓ :
         (Polynomial.X - Polynomial.C a) ^ ℓ *
           t.sum (fun i c =>
             Polynomial.C c * (Polynomial.X - Polynomial.C a) ^ (i - ℓ)) := by
-    simp [Polynomial.sum_def, Finset.mul_sum]
+    simp only [Polynomial.sum_def, Finset.mul_sum]
     refine Finset.sum_congr rfl ?_
     intro i hi
     have hle : ℓ ≤ i := by

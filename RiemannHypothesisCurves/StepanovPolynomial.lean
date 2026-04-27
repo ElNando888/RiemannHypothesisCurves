@@ -5,6 +5,8 @@ Copyright (c) 2026 Math Inc. All rights reserved.
 import RiemannHypothesisCurves.StepanovDegreeBounds
 import RiemannHypothesisCurves.StepanovSystem
 
+set_option linter.style.longLine false
+
 noncomputable def S_a (F : Type*) [Field F] (f : Polynomial F) (c : ℕ) (a : F) : Set F :=
   {x | Polynomial.eval x f = 0 ∨ (Polynomial.eval x f) ^ c = a}
 

@@ -7,6 +7,9 @@ import RiemannHypothesisCurves.Utils
 import Mathlib.Data.Real.Sqrt
 import Mathlib.Tactic.NormNum.RealSqrt
 
+set_option linter.unusedDecidableInType false
+set_option linter.style.longLine false
+
 noncomputable def hyperellipticCurve (F : Type*) [Field F] (f : Polynomial F) : Set (F × F) :=
   {p | p.2 ^ 2 = Polynomial.eval p.1 f}
 
@@ -176,7 +179,7 @@ by
   have h_N_le_2S1 : (Fintype.card curveSet : ℝ) ≤ 2 * (Fintype.card S1_set : ℝ) := by
     have h_proj : ∀ p : curveSet, (p.val.1 : F) ∈ S_a F f c 1 := by
       intro ⟨⟨x, y⟩, hp⟩
-      simp [S_a]
+      simp only
       by_cases hfx : Polynomial.eval x f = 0
       · left; exact hfx
       · right
@@ -291,12 +294,10 @@ by
       exact (mul_ne_zero htwo_ne hroot_ne) hmul
     cases b <;> cases b'
     · rfl
-    ·
-      exfalso
+    · exfalso
       have : -root x = root x := by simpa [yval] using hy
       exact hroot_ne_neg this.symm
-    ·
-      exfalso
+    · exfalso
       have : root x = -root x := by simpa [yval] using hy
       exact hroot_ne_neg this
     · rfl
@@ -332,7 +333,8 @@ by
   let Sn1 := Finset.univ.filter (fun x : F => x ∈ S_a F f c (-1))
   have h_compl : N1 = Sn1ᶜ := by
     ext x
-    simp [N1, Sn1, S_a]
+    simp only [ne_eq, Finset.mem_filter, Finset.mem_univ, true_and, S_a, Set.mem_setOf_eq,
+      Finset.compl_filter, not_or, N1, Sn1]
     constructor
     · rintro ⟨h1, hne⟩
       refine ⟨hne, ?_⟩

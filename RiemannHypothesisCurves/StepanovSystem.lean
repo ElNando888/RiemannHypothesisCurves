@@ -8,6 +8,8 @@ import RiemannHypothesisCurves.StepanovVanishing
 import Mathlib.Data.NNReal.Basic
 import Mathlib.RingTheory.Polynomial.DegreeLT
 
+set_option linter.style.longLine false
+
 lemma stepanov_sigma_degree_bound_fin (F : Type*) [Field F] (d k m J : ℕ) (a : F)
     (rjk sjk : Fin J → Polynomial F) (hdeg_r : ∀ j : Fin J, (rjk j).natDegree ≤ d + k * (m - 1))
     (hdeg_s : ∀ j : Fin J, (sjk j).natDegree ≤ d + k * (m - 1)) :
@@ -476,8 +478,7 @@ lemma stepanov_system_has_solution (F : Type*) [Field F] [Fintype F] (f : Polyno
   let sigmaMapLT (k : Fin ℓ) : V →ₗ[F] Polynomial.degreeLT F (J + d + k * (m - 1)) :=
     LinearMap.codRestrict (Polynomial.degreeLT F (J + d + k * (m - 1))) (sigmaMap k) (by
       intro v; by_cases hzero : sigmaMap k v = 0; · simp [hzero]
-      ·
-        have hdeg_nat : (sigmaMap k v).natDegree < J + d + k * (m - 1) := by
+      · have hdeg_nat : (sigmaMap k v).natDegree < J + d + k * (m - 1) := by
           have hlt : J - 1 + d + k * (m - 1) < J + d + k * (m - 1) := by omega
           exact lt_of_le_of_lt (h_sigma_deg k v) hlt
         simpa [Polynomial.mem_degreeLT] using (Polynomial.natDegree_lt_iff_degree_lt hzero).1 hdeg_nat)
@@ -510,8 +511,7 @@ lemma stepanov_system_has_solution (F : Type*) [Field F] [Fintype F] (f : Polyno
       funext i
       by_cases hlt : (i : ℕ) < J
       · have : rj i = 0 := (h i hlt).1; simpa [rj, hlt, rjMap, piProj, finLeft] using this
-      ·
-        have hge : J ≤ (i : ℕ) := le_of_not_gt hlt
+      · have hge : J ≤ (i : ℕ) := le_of_not_gt hlt
         have hj : (i : ℕ) - J < J := by have hlt' : (i : ℕ) < 2 * J := i.isLt; omega
         have : sj ((i : ℕ) - J) = 0 := (h ((i : ℕ) - J) hj).2
         have hidx : finRight ⟨(i : ℕ) - J, hj⟩ = i := by ext; simp [finRight, Nat.add_sub_of_le hge]
